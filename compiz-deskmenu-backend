@@ -48,8 +48,9 @@ class DeskMenu(gtk.Menu):
 				item.props.image = gtk.image_new_from_icon_name(launcher.icon, gtk.ICON_SIZE_MENU)
 			self.append(item)
 
+		self.add(gtk.SeparatorMenuItem())
 		if USE_WNCK:
-			self.add(gtk.SeparatorMenuItem())
+
 			self.screen = wnck.screen_get_default()
 			self.screen.force_update()
 			item = gtk.MenuItem('Windows')
@@ -103,6 +104,12 @@ class DeskMenu(gtk.Menu):
 				item = gtk.MenuItem(title)
 			item.connect('activate', self.activate_window, window)
 			submenu.append(item)
+
+		if not submenu.get_children():
+			item = gtk.MenuItem('None')
+			item.props.sensitive = False
+			submenu.append(item)
+
 		submenu.show_all()
 
 	def reload_activate(self, widget):
