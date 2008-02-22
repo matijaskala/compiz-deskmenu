@@ -9,7 +9,7 @@
         <icon>gnome-terminal</icon>
         <command>gnome-terminal</command>
     </item>
-    <menu title="Other">
+    <menu name="Extras">
         <item type="launcher">
             <name>Text Editor</name>
             <icon>accessories-text-editor</icon>
@@ -23,4 +23,5 @@
     </menu>
     <item type="separator"></item>
     <item type="windowlist"></item>
+    <item type="reload"></item>
 </menu>
