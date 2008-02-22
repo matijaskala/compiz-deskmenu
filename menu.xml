@@ -1,0 +1,26 @@
+<menu>
+    <item type="launcher">
+        <name>Epiphany</name>
+        <icon>gnome-web-browser</icon>
+        <command>epiphany</command>
+    </item>
+    <item type="launcher">
+        <name>Terminal</name>
+        <icon>gnome-terminal</icon>
+        <command>gnome-terminal</command>
+    </item>
+    <menu title="Other">
+        <item type="launcher">
+            <name>Text Editor</name>
+            <icon>accessories-text-editor</icon>
+            <command>gedit</command>
+        </item>
+        <item type="launcher">
+            <name>Aisleriot Solitaire</name>
+            <icon>gnome-aisleriot</icon>
+            <command>sol</command>
+        </item>
+    </menu>
+    <item type="separator"></item>
+    <item type="windowlist"></item>
+</menu>
