@@ -46,8 +46,8 @@ Items: <item type="Type"> There are a few supported item types:
       ~/.icons/$YOUR_THEME/$ICON_SIZE/apps/
     - <command>: the launcher command line
  * separator: a simple GtkSeparatorMenuItem
- * windowlist: libwnck-based window list menu. Note that you can only have one
-   in your menu. The first one parsed will be used and any more will be ignored
+ * windowlist: libwnck-based window list menu.
+ * viewportlist: libwnck-based viewport list menu.
  * reload: reload button (it actually quits the menu)
 
 Menu editor coming soon.

@@ -23,5 +23,6 @@
     </menu>
     <item type="separator"></item>
     <item type="windowlist"></item>
+    <item type="viewportlist"></item>
     <item type="reload"></item>
 </menu>

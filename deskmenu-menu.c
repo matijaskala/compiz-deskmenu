@@ -24,15 +24,19 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 
-#define WNCK_I_KNOW_THIS_IS_UNSTABLE 1
+#define HAVE_WNCK 1
 
+#if HAVE_WNCK
+#define WNCK_I_KNOW_THIS_IS_UNSTABLE 1
 #include <libwnck/libwnck.h>
+#include "deskmenu-wnck.h"
+#endif
+
 #include "deskmenu-menu.h"
 #include "deskmenu-glue.h"
 
 
 G_DEFINE_TYPE(Deskmenu, deskmenu, G_TYPE_OBJECT)
-
 
 GQuark
 deskmenu_error_quark (void)
@@ -43,93 +47,12 @@ deskmenu_error_quark (void)
     return quark;
 }
 
-
 static void
 quit (GtkWidget *widget,
       gpointer   data)
 {
     gtk_main_quit ();
 }
-
-
-static void
-activate_window (GtkWidget  *widget,
-                 WnckWindow *window)
-{
-    WnckWorkspace *workspace;
-    guint32 timestamp;
-
-    timestamp = gtk_get_current_event_time ();
-
-    workspace = (WnckWorkspace *) wnck_window_get_workspace (window);
-
-    if (workspace)
-        wnck_workspace_activate (workspace, timestamp);
-    wnck_window_activate (window, timestamp);
-}
-
-void
-deskmenu_populate_windows_menu (Deskmenu *deskmenu)
-{
-    GList *list, *tmp;
-    char *name, *ante, *post;
-    GtkWidget *item;
-    WnckWindow *window;
-
-    list = gtk_container_get_children (GTK_CONTAINER (deskmenu->windows_menu));
-
-    for (tmp = list; tmp != NULL; tmp = tmp->next)
-    {
-        gtk_widget_destroy (tmp->data);
-    }
-
-    list = wnck_screen_get_windows (deskmenu->screen);
-
-    for (tmp = list; tmp != NULL; tmp = tmp->next)
-    {
-        window = tmp->data;
-
-        if (wnck_window_is_skip_tasklist (window))
-            continue;
-
-        if (wnck_window_is_shaded (window))
-        {
-            ante = "=";
-            post = "=";
-
-        }
-        else
-        {
-            if (wnck_window_is_minimized (window))
-            {
-                ante = "[";
-                post = "]";
-            }
-            else
-            {
-                ante = "";
-                post = "";
-            }
-        }
-
-        name = g_strconcat (ante, wnck_window_get_name (window), post, NULL);
-
-        item = gtk_image_menu_item_new_with_label (name);
-        gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM(item), 
-            gtk_image_new_from_pixbuf (
-                (GdkPixbuf *) wnck_window_get_mini_icon (window)));
-        g_signal_connect (G_OBJECT (item), "activate", 
-            G_CALLBACK (activate_window), window);
-        gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->windows_menu), item);
-        g_free (name);
-
-        
-    }
-
-    gtk_widget_show_all (deskmenu->menu);
-
-}
-
 
 void
 launcher_activated (GtkWidget *widget,
@@ -150,7 +73,76 @@ launcher_activated (GtkWidget *widget,
         
 }
 
+void
+deskmenu_construct_item (Deskmenu *deskmenu)
+{
+    DeskmenuItem *item = deskmenu->current_item;
+    GtkWidget *menu_item;
+    GHook *hook;
 
+    switch (item->type)
+    {
+        case DESKMENU_ITEM_LAUNCHER:
+            menu_item = gtk_image_menu_item_new_with_label
+                (g_strstrip (item->name->str));
+            gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menu_item), 
+                gtk_image_new_from_icon_name (g_strstrip (item->icon->str),
+                    GTK_ICON_SIZE_MENU));
+            g_signal_connect (G_OBJECT (menu_item), "activate",
+                G_CALLBACK (launcher_activated), g_strstrip (g_strdup
+                    (item->command->str)));
+            gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), 
+                menu_item);
+            break;
+
+        case DESKMENU_ITEM_SEPARATOR:
+            menu_item = gtk_separator_menu_item_new ();
+            gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), 
+                menu_item);
+            break;
+#if HAVE_WNCK
+        case DESKMENU_ITEM_WINDOWLIST:
+            menu_item = gtk_menu_item_new_with_label ("Windows");
+
+            DeskmenuWindowlist *windowlist = deskmenu_windowlist_new ();
+            hook = g_hook_alloc (deskmenu->show_hooks);
+            hook->data = (gpointer) windowlist;
+            hook->func = (GHookFunc *) deskmenu_windowlist_update;
+            g_hook_append (deskmenu->show_hooks, hook);
+
+            gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_item),
+                windowlist->menu);
+            gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu),
+                menu_item);
+            break;
+
+        case DESKMENU_ITEM_VIEWPORTLIST:
+            menu_item = gtk_menu_item_new_with_label ("Viewports");
+
+            DeskmenuVplist *vplist = deskmenu_vplist_new ();
+
+            gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_item),
+                vplist->menu);
+            gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu),
+                menu_item);
+            break;
+#endif
+        case DESKMENU_ITEM_RELOAD:
+            menu_item = gtk_image_menu_item_new_with_label ("Reload");
+            gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menu_item), 
+                gtk_image_new_from_stock (GTK_STOCK_REFRESH, 
+                    GTK_ICON_SIZE_MENU));
+            g_signal_connect (G_OBJECT (menu_item), "activate", 
+                G_CALLBACK (quit), NULL);    
+            gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), 
+                menu_item);
+            break;
+
+        default:
+            break;
+    }
+
+}
 /* The handler functions. */
 
 void
@@ -162,69 +154,78 @@ start_element (GMarkupParseContext *context,
                GError             **error)
 {
     Deskmenu *deskmenu = DESKMENU (user_data);
+    DeskmenuElementType element_type;
     const gchar **ncursor = attr_names, **vcursor = attr_values;
     GtkWidget *item, *menu;
 
-    if (strcmp (element_name, "menu") == 0)
-    {
-        if (!deskmenu->menu)
-        {
-            deskmenu->menu = gtk_menu_new ();
-            g_object_set_data (G_OBJECT (deskmenu->menu), "parent menu", NULL);
-            deskmenu->current_menu = deskmenu->menu;
-        }
-        else
-        {
-            gchar *name = NULL;
-            while (*ncursor) {
-                if (strcmp (*ncursor, "name") == 0)
-                    name = g_strdup (*vcursor);
-                else
-                    g_set_error (error, G_MARKUP_ERROR,
-                        G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE, 
-                        "Unknown attribute: %s", *ncursor);
-                ncursor++;
-                vcursor++;
-            }
-            item = gtk_menu_item_new_with_label (name);
-            gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), item);
-            menu = gtk_menu_new ();
-            g_object_set_data (G_OBJECT (menu), "parent menu", deskmenu->current_menu);
-            deskmenu->current_menu = menu;
-            gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), deskmenu->current_menu);
-            g_free (name);
-        }
+    element_type = (DeskmenuElementType) GPOINTER_TO_INT (g_hash_table_lookup 
+        (deskmenu->element_hash, element_name));
 
-    }
-    else if (strcmp (element_name, "item") == 0)
+    switch (element_type)
     {
-        deskmenu->current_item = g_slice_new0 (DeskmenuItem);
-            while (*ncursor) {
-                if (strcmp (*ncursor, "type") == 0)
-                    deskmenu->current_item->type = g_strdup (*vcursor);
-                else
-                    g_set_error (error, G_MARKUP_ERROR,
-                        G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE, 
-                        "Unknown attribute: %s", *ncursor);
-                ncursor++;
-                vcursor++;
+        case DESKMENU_ELEMENT_MENU:
+            if (!deskmenu->menu)
+            {
+                deskmenu->menu = gtk_menu_new ();
+                g_object_set_data (G_OBJECT (deskmenu->menu), "parent menu",
+                    NULL);
+                deskmenu->current_menu = deskmenu->menu;
             }
+            else
+            {
+                gchar *name = NULL;
+                while (*ncursor)
+                {
+                    if (strcmp (*ncursor, "name") == 0)
+                        name = g_strdup (*vcursor);
+                    else
+                        g_set_error (error, G_MARKUP_ERROR,
+                            G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE, 
+                            "Unknown attribute: %s", *ncursor);
+                    ncursor++;
+                    vcursor++;
+                }
+                item = gtk_menu_item_new_with_label (name);
+                gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), 
+                    item);
+                menu = gtk_menu_new ();
+                g_object_set_data (G_OBJECT (menu), "parent menu", 
+                    deskmenu->current_menu);
+                deskmenu->current_menu = menu;
+                gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), 
+                    deskmenu->current_menu);
+                g_free (name);
+            }
+            break;
+        
+        case DESKMENU_ELEMENT_ITEM:
+            deskmenu->current_item = g_slice_new0 (DeskmenuItem);
+                while (*ncursor)
+                {
+                    if (strcmp (*ncursor, "type") == 0)
+                        deskmenu->current_item->type = (DeskmenuItemType) 
+                            GPOINTER_TO_INT (g_hash_table_lookup 
+                                (deskmenu->item_hash, *vcursor));
+                    else
+                        g_set_error (error, G_MARKUP_ERROR,
+                            G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE, 
+                            "Unknown attribute: %s", *ncursor);
+                    ncursor++;
+                    vcursor++;
+                }
+            break;
+
+        case DESKMENU_ELEMENT_NAME:
+        case DESKMENU_ELEMENT_ICON:
+        case DESKMENU_ELEMENT_COMMAND:
+            deskmenu->current_item->current_element = element_type;
+            break;
+
+        default:
+            g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT, 
+                "Unknown element: %s", element_name);
+            break;
     }
-    else if (strcmp (element_name, "name") == 0)
-    {
-        deskmenu->current_item->current_element = "name";
-    }
-    else if (strcmp (element_name, "icon") == 0)
-    {
-        deskmenu->current_item->current_element = "icon";
-    } 
-    else if (strcmp (element_name, "command") == 0)
-    {
-        deskmenu->current_item->current_element = "command";
-    }
-    else
-        g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT, 
-            "Unknown element: %s", element_name);
 }
 
 void
@@ -236,30 +237,37 @@ text (GMarkupParseContext *context,
 {
     Deskmenu *deskmenu = DESKMENU (user_data);
     DeskmenuItem *item = deskmenu->current_item;
-    if (item && item->current_element)
+
+    if (!(item && item->current_element))
+        return;
+
+    switch (item->current_element)
     {
-        if (strcmp (item->current_element, "name") == 0)
-        {
+        case DESKMENU_ELEMENT_NAME:
             if (!item->name)
                 item->name = g_string_new_len (text, text_len);
             else
                 g_string_append_len (item->name, text, text_len);
-        }
-        else if (strcmp (item->current_element, "icon") == 0)
-        {
+            break;
+
+        case DESKMENU_ELEMENT_ICON:
             if (!item->icon)
                 item->icon = g_string_new_len (text, text_len);
             else
                 g_string_append_len (item->icon, text, text_len);
-        } 
-        else if (strcmp (item->current_element, "command") == 0)
-        {
+            break;
+
+        case DESKMENU_ELEMENT_COMMAND:
             if (!item->command)
                 item->command = g_string_new_len (text, text_len);
             else
                 g_string_append_len (item->command, text, text_len);
-        }
+            break;
+
+        default:
+            break;
     }
+
 }
 
 void
@@ -269,59 +277,39 @@ end_element (GMarkupParseContext *context,
              GError             **error)
 {
 
+    DeskmenuElementType element_type;
     Deskmenu *deskmenu = DESKMENU (user_data);
-    if (strcmp (element_name, "menu") == 0)
+    GtkWidget *parent;
+    element_type = (DeskmenuElementType) GPOINTER_TO_INT (g_hash_table_lookup 
+        (deskmenu->element_hash, element_name));
+
+    switch (element_type)
     {
-        GtkWidget *parent = g_object_get_data (G_OBJECT (deskmenu->current_menu), "parent menu");
-        deskmenu->current_menu = parent;
-    }
-    else if (strcmp (element_name, "item") == 0 && deskmenu->current_item)
-    {
+        case DESKMENU_ELEMENT_MENU:
+            parent = g_object_get_data (G_OBJECT (deskmenu->current_menu), 
+                "parent menu");
+            deskmenu->current_menu = parent;
+            break;
 
-        /* finally make the item ^_^ */
-        DeskmenuItem *item = deskmenu->current_item;
-        GtkWidget *menu_item;
-        if (strcmp (item->type, "launcher") == 0)
-        {
-            menu_item = gtk_image_menu_item_new_with_label (g_strstrip (item->name->str));
-            gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menu_item), 
-                gtk_image_new_from_icon_name (g_strstrip (item->icon->str), GTK_ICON_SIZE_MENU));
-            g_signal_connect (G_OBJECT (menu_item), "activate",
-                G_CALLBACK (launcher_activated), g_strstrip (g_strdup (item->command->str)));
-            gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), menu_item);
+        case DESKMENU_ELEMENT_ITEM:
+            if (!deskmenu->current_item)
+                break;
+            /* finally make the item ^_^ */
+            deskmenu_construct_item (deskmenu);
 
-        }
-        else if (strcmp (item->type, "separator") == 0)
-        {
-            menu_item = gtk_separator_menu_item_new ();
-            gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), menu_item);
-        }
-        else if (strcmp (item->type, "windowlist") == 0 && !deskmenu->windows_menu)
-        {
-            menu_item = gtk_menu_item_new_with_label ("Windows");
-            deskmenu->windows_menu = gtk_menu_new ();
-            gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_item), deskmenu->windows_menu);
-            gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), menu_item);
-        }
-        else if (strcmp (item->type, "reload") == 0)
-        {
-            menu_item = gtk_image_menu_item_new_with_label ("Reload");
-            gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menu_item), 
-                gtk_image_new_from_stock (GTK_STOCK_REFRESH, GTK_ICON_SIZE_MENU));
-            g_signal_connect (G_OBJECT (menu_item), "activate", G_CALLBACK (quit), NULL);    
-            gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), menu_item);
-        }
+            /* free data used to make it */
+            if (deskmenu->current_item->name)
+                g_string_free (deskmenu->current_item->name, TRUE);
+            if (deskmenu->current_item->icon)
+                g_string_free (deskmenu->current_item->icon, TRUE);
+            if (deskmenu->current_item->command)
+                g_string_free (deskmenu->current_item->command, TRUE);
+            g_slice_free (DeskmenuItem, deskmenu->current_item);
+            deskmenu->current_item = NULL;
+            break;
 
-        g_free (item->type);
-
-        if (item->name)
-            g_string_free (item->name, TRUE);
-        if (item->icon)
-            g_string_free (item->icon, TRUE);
-        if (item->command)
-            g_string_free (item->command, TRUE);
-        g_slice_free (DeskmenuItem, item);
-        deskmenu->current_item = NULL;
+        default:
+            break;
     }
 }
 
@@ -333,6 +321,8 @@ static GMarkupParser parser = {
     NULL,
     NULL
 };
+
+
 
 
 /* Class init */
@@ -353,13 +343,42 @@ deskmenu_init (Deskmenu *deskmenu)
                                g_get_user_config_dir (),
                                "compiz", "deskmenu", "menu.xml", NULL);
 
-    deskmenu->screen = wnck_screen_get_default ();
-    wnck_screen_force_update (deskmenu->screen);
+    deskmenu->show_hooks = g_slice_new0 (GHookList);
+
+    g_hook_list_init (deskmenu->show_hooks, sizeof (GHook));
+
 
     deskmenu->menu = NULL;
-    deskmenu->windows_menu = NULL;
     deskmenu->current_menu = NULL;
     deskmenu->current_item = NULL;
+
+    deskmenu->item_hash = g_hash_table_new (g_str_hash, g_str_equal);
+
+    g_hash_table_insert (deskmenu->item_hash, "launcher",
+        GINT_TO_POINTER (DESKMENU_ITEM_LAUNCHER));
+    g_hash_table_insert (deskmenu->item_hash, "separator",
+        GINT_TO_POINTER (DESKMENU_ITEM_SEPARATOR));
+#if HAVE_WNCK
+    g_hash_table_insert (deskmenu->item_hash, "windowlist",
+        GINT_TO_POINTER (DESKMENU_ITEM_WINDOWLIST));
+    g_hash_table_insert (deskmenu->item_hash, "viewportlist",
+        GINT_TO_POINTER (DESKMENU_ITEM_VIEWPORTLIST));
+#endif
+    g_hash_table_insert (deskmenu->item_hash, "reload",
+        GINT_TO_POINTER (DESKMENU_ITEM_RELOAD));
+
+    deskmenu->element_hash = g_hash_table_new (g_str_hash, g_str_equal);
+    
+    g_hash_table_insert (deskmenu->element_hash, "menu", 
+        GINT_TO_POINTER (DESKMENU_ELEMENT_MENU));
+    g_hash_table_insert (deskmenu->element_hash, "item", 
+        GINT_TO_POINTER (DESKMENU_ELEMENT_ITEM));
+    g_hash_table_insert (deskmenu->element_hash, "name", 
+        GINT_TO_POINTER (DESKMENU_ELEMENT_NAME));
+    g_hash_table_insert (deskmenu->element_hash, "icon", 
+        GINT_TO_POINTER (DESKMENU_ELEMENT_ICON));
+    g_hash_table_insert (deskmenu->element_hash, "command", 
+        GINT_TO_POINTER (DESKMENU_ELEMENT_COMMAND));
 
     char *text;
     gsize length;
@@ -398,15 +417,15 @@ deskmenu_init (Deskmenu *deskmenu)
     if (!success)
     {
         g_print ("Couldn't find a menu file\n");
-        exit (255);
+        exit (1);
     }
 
     if (!g_markup_parse_context_parse (context, text, length, NULL))
     {
         int line, column;
         g_markup_parse_context_get_position (context, &line, &column);
-        g_print ("Parse of %s failed at line %d, column %d \n", configpath, line, column);
-        exit (255);
+        g_print ("Parse of %s failed at line %d \n", configpath, line);
+        exit (1);
     }
 
     g_free(text);
@@ -423,8 +442,7 @@ deskmenu_show (Deskmenu *deskmenu,
     guint32 timestamp;
     timestamp = gtk_get_current_event_time ();
 
-    if (deskmenu->windows_menu)
-        deskmenu_populate_windows_menu (deskmenu);
+    g_hook_list_invoke (deskmenu->show_hooks, FALSE);
 
     gtk_menu_popup (GTK_MENU (deskmenu->menu), 
                     NULL, NULL, NULL, NULL, 
@@ -437,9 +455,9 @@ static void
 die (const char *prefix,
      GError     *error)
 {
-    g_error("%s: %s", prefix, error->message);
+    g_error ("%s: %s", prefix, error->message);
     g_error_free (error);
-    exit(1);
+    exit (1);
 }
 
 int

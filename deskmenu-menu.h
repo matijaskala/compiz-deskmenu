@@ -23,29 +23,54 @@ typedef struct DeskmenuItem DeskmenuItem;
 
 GType deskmenu_get_type (void);
 
+typedef enum
+{
+    DESKMENU_ITEM_NONE = 0,
+    DESKMENU_ITEM_LAUNCHER,
+    DESKMENU_ITEM_SEPARATOR,
+    DESKMENU_ITEM_WINDOWLIST,
+    DESKMENU_ITEM_VIEWPORTLIST,
+    DESKMENU_ITEM_RELOAD
+} DeskmenuItemType;
+
+typedef enum
+{
+    DESKMENU_ELEMENT_NONE = 0,
+    DESKMENU_ELEMENT_MENU,
+    DESKMENU_ELEMENT_ITEM,
+    DESKMENU_ELEMENT_NAME,
+    DESKMENU_ELEMENT_ICON,
+    DESKMENU_ELEMENT_COMMAND
+} DeskmenuElementType;
+
+
 struct DeskmenuItem
 {
-    gchar *type;
-    gchar *current_element;
+    DeskmenuItemType type;
+    DeskmenuElementType current_element;
     GString *name;
     GString *icon;
     GString *command;
 };
 
+
 struct Deskmenu
 {
-  GObject parent;
-  WnckScreen *screen;
-  GtkWidget *menu;
-  GtkWidget *windows_menu;
-  GtkWidget *current_menu;
-  DeskmenuItem *current_item;
-  gchar *configpath;
+    GObject parent;
+#if HAVE_WNCK
+    DeskmenuWindowlist *windowlist;
+#endif
+    GtkWidget *menu;
+    GtkWidget *current_menu;
+    DeskmenuItem *current_item;
+    GHashTable *item_hash;
+    GHashTable *element_hash;
+    GHookList *show_hooks;
 };
 
 struct DeskmenuClass
 {
-  GObjectClass parent;
+    GObjectClass parent;
 };
 
 
@@ -56,10 +81,9 @@ struct DeskmenuClass
 #define IS_DESKMENU_CLASS(klass)   (G_TYPE_CHECK_CLASS_TYPE ((klass), DESKMENU_TYPE))
 #define DESKMENU_GET_CLASS(obj)    (G_TYPE_INSTANCE_GET_CLASS ((obj), DESKMENU_TYPE, DeskMenu))
 
-
 typedef enum
 {
-  DESKMENU_ERROR_GENERIC
+    DESKMENU_ERROR_GENERIC
 } DeskmenuError;
 
 GQuark deskmenu_error_quark (void);
