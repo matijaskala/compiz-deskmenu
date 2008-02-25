@@ -363,12 +363,13 @@ deskmenu_vplist_update (WnckScreen *screen, DeskmenuVplist *vplist)
 
     if (new_count != vplist->old_count)
     {
-        GtkWidget *item = NULL;
+        GtkWidget **items = NULL, *item;
         gint i;
+        items = vplist->goto_items;
         for (i = 0; i < vplist->old_count; i++)
         {
-            gtk_widget_destroy (item);
-            item = *(vplist->goto_items)++;
+            gtk_widget_destroy (*items);
+            items++;
         }
 
         g_slice_free1 (sizeof (GtkWidget *) * vplist->old_count,
