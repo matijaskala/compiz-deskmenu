@@ -97,7 +97,8 @@ activate_window (GtkWidget  *widget,
     wnck_window_activate (window, timestamp);
 }
 
-gint dmwin_for_window (DeskmenuWindow *dmwin, 
+gint
+dmwin_for_window (DeskmenuWindow *dmwin, 
                        WnckWindow *window)
 {
     if (dmwin->window == window)
@@ -107,7 +108,8 @@ gint dmwin_for_window (DeskmenuWindow *dmwin,
 }
 
 
-void window_update (WnckWindow *window, 
+void
+window_update (WnckWindow *window, 
                     DeskmenuWindow* dmwin)
 {
     gchar *name, *ante, *post;
@@ -220,16 +222,24 @@ void screen_window_opened (WnckScreen *screen, WnckWindow *window,
 void screen_window_closed (WnckScreen *screen, WnckWindow *window,
                            DeskmenuWindowlist *windowlist)
 {
+    if (wnck_window_is_skip_tasklist (window))
+        return;
+
     DeskmenuWindow *dmwin;
-    dmwin = (DeskmenuWindow *) g_list_find_custom (windowlist->windows, window,
+    GList *list;
+
+    list = g_list_find_custom (windowlist->windows, window,
         (GCompareFunc) dmwin_for_window);
-    if (!dmwin)
+
+    if (!list)
     {
         g_debug ("Leaked DeskmenuWin struct for closed window with name: %s\n", 
             wnck_window_get_name (window));
         return;
     }
-    
+
+    dmwin = list->data;
+
     gtk_widget_destroy (dmwin->image);
     gtk_widget_destroy (dmwin->label);
     gtk_widget_destroy (dmwin->item);
@@ -262,7 +272,7 @@ deskmenu_windowlist_new (void)
         G_CALLBACK (screen_window_opened), windowlist);
 
     g_signal_connect (G_OBJECT (windowlist->screen), "window-closed",
-        G_CALLBACK (screen_window_opened), windowlist);
+        G_CALLBACK (screen_window_closed), windowlist);
 
     return windowlist;
 }
