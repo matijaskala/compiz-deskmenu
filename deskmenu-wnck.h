@@ -41,6 +41,6 @@ typedef struct DeskmenuVplist
 } DeskmenuVplist;
 
 DeskmenuWindowlist* deskmenu_windowlist_new (void);
-void deskmenu_windowlist_update (DeskmenuWindowlist*);
 
 DeskmenuVplist* deskmenu_vplist_new (void);
+

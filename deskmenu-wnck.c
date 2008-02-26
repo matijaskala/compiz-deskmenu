@@ -97,9 +97,9 @@ activate_window (GtkWidget  *widget,
     wnck_window_activate (window, timestamp);
 }
 
-gint
+static gint
 dmwin_for_window (DeskmenuWindow *dmwin, 
-                       WnckWindow *window)
+                  WnckWindow *window)
 {
     if (dmwin->window == window)
         return 0;
@@ -108,9 +108,9 @@ dmwin_for_window (DeskmenuWindow *dmwin,
 }
 
 
-void
+static void
 window_update (WnckWindow *window, 
-                    DeskmenuWindow* dmwin)
+               DeskmenuWindow* dmwin)
 {
     gchar *name, *ante, *post;
 
@@ -157,13 +157,14 @@ window_update (WnckWindow *window,
         g_object_unref (pixbuf);
 }
 
-void window_state_changed (WnckWindow *window, WnckWindowState changed_state,
-                           WnckWindowState new_state, DeskmenuWindow *dmwin)
+static void
+window_state_changed (WnckWindow *window, WnckWindowState changed_state,
+                      WnckWindowState new_state, DeskmenuWindow *dmwin)
 {
     window_update (window, dmwin);
 }
 
-DeskmenuWindow*
+static DeskmenuWindow*
 deskmenu_windowlist_window_new (WnckWindow *window,
                                 DeskmenuWindowlist *windowlist)
 {
@@ -208,8 +209,9 @@ deskmenu_windowlist_window_new (WnckWindow *window,
     return dmwin;
 }
 
-void screen_window_opened (WnckScreen *screen, WnckWindow *window,
-                           DeskmenuWindowlist *windowlist)
+static void
+screen_window_opened (WnckScreen *screen, WnckWindow *window,
+                      DeskmenuWindowlist *windowlist)
 {
     if (wnck_window_is_skip_tasklist (window))
         return;
@@ -219,8 +221,9 @@ void screen_window_opened (WnckScreen *screen, WnckWindow *window,
     windowlist->windows = g_list_append (windowlist->windows, dmwin);
 }
 
-void screen_window_closed (WnckScreen *screen, WnckWindow *window,
-                           DeskmenuWindowlist *windowlist)
+static void
+screen_window_closed (WnckScreen *screen, WnckWindow *window,
+                      DeskmenuWindowlist *windowlist)
 {
     if (wnck_window_is_skip_tasklist (window))
         return;
@@ -277,7 +280,7 @@ deskmenu_windowlist_new (void)
     return windowlist;
 }
 
-void
+static void
 deskmenu_vplist_goto (GtkWidget      *widget,
                       DeskmenuVplist *vplist)
 {
@@ -308,7 +311,7 @@ deskmenu_vplist_goto (GtkWidget      *widget,
         y * vplist->screen_height);
 }
 
-void
+static void
 deskmenu_vplist_go_direction (GtkWidget      *widget,
                               DeskmenuVplist *vplist)
 {
@@ -339,7 +342,7 @@ deskmenu_vplist_go_direction (GtkWidget      *widget,
     wnck_screen_move_viewport (vplist->screen, x, y);
 }
 
-gboolean
+static gboolean
 deskmenu_vplist_can_move (DeskmenuVplist      *vplist,
                           WnckMotionDirection  direction)
 {
@@ -359,7 +362,7 @@ deskmenu_vplist_can_move (DeskmenuVplist      *vplist,
     g_assert_not_reached ();
 }
 
-GtkWidget*
+static GtkWidget*
 deskmenu_vplist_make_go_item (DeskmenuVplist      *vplist,
                               WnckMotionDirection  direction,
                               gchar               *name,
@@ -387,7 +390,7 @@ deskmenu_vplist_get_vpid (DeskmenuVplist *vplist)
     return (vpy * vplist->hsize + vpx);
 }
 
-void
+static void
 deskmenu_vplist_update (WnckScreen *screen, DeskmenuVplist *vplist)
 {
     guint new_count, current;

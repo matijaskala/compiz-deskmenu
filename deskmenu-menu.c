@@ -54,7 +54,7 @@ quit (GtkWidget *widget,
     gtk_main_quit ();
 }
 
-void
+static void
 launcher_activated (GtkWidget *widget,
                     gchar     *command)
 {
@@ -73,7 +73,7 @@ launcher_activated (GtkWidget *widget,
         
 }
 
-void
+static void
 deskmenu_construct_item (Deskmenu *deskmenu)
 {
     DeskmenuItem *item = deskmenu->current_item;
@@ -139,7 +139,7 @@ deskmenu_construct_item (Deskmenu *deskmenu)
 }
 /* The handler functions. */
 
-void
+static void
 start_element (GMarkupParseContext *context,
                const gchar         *element_name,
                const gchar        **attr_names,
@@ -229,7 +229,7 @@ start_element (GMarkupParseContext *context,
     }
 }
 
-void
+static void
 text (GMarkupParseContext *context,
       const gchar         *text,
       gsize                text_len,
@@ -274,7 +274,7 @@ text (GMarkupParseContext *context,
 
 }
 
-void
+static void
 end_element (GMarkupParseContext *context,
              const gchar         *element_name,
              gpointer             user_data,
