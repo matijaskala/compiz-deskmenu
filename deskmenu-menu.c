@@ -78,7 +78,6 @@ deskmenu_construct_item (Deskmenu *deskmenu)
 {
     DeskmenuItem *item = deskmenu->current_item;
     GtkWidget *menu_item;
-    GHook *hook;
 
     switch (item->type)
     {
@@ -105,10 +104,6 @@ deskmenu_construct_item (Deskmenu *deskmenu)
             menu_item = gtk_menu_item_new_with_label ("Windows");
 
             DeskmenuWindowlist *windowlist = deskmenu_windowlist_new ();
-            hook = g_hook_alloc (deskmenu->show_hooks);
-            hook->data = (gpointer) windowlist;
-            hook->func = (GHookFunc *) deskmenu_windowlist_update;
-            g_hook_append (deskmenu->show_hooks, hook);
 
             gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_item),
                 windowlist->menu);
@@ -120,7 +115,6 @@ deskmenu_construct_item (Deskmenu *deskmenu)
             menu_item = gtk_menu_item_new_with_label ("Viewports");
 
             DeskmenuVplist *vplist = deskmenu_vplist_new ();
-
             gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_item),
                 vplist->menu);
             gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu),
@@ -158,6 +152,9 @@ start_element (GMarkupParseContext *context,
     const gchar **ncursor = attr_names, **vcursor = attr_values;
     GtkWidget *item, *menu;
 
+    if (deskmenu->stop_parsing)
+        return;
+
     element_type = (DeskmenuElementType) GPOINTER_TO_INT (g_hash_table_lookup 
         (deskmenu->element_hash, element_name));
 
@@ -185,7 +182,10 @@ start_element (GMarkupParseContext *context,
                     ncursor++;
                     vcursor++;
                 }
-                item = gtk_menu_item_new_with_label (name);
+                if (name)
+                    item = gtk_menu_item_new_with_label (name);
+                else
+                    item = gtk_menu_item_new_with_label ("");
                 gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), 
                     item);
                 menu = gtk_menu_new ();
@@ -218,7 +218,8 @@ start_element (GMarkupParseContext *context,
         case DESKMENU_ELEMENT_NAME:
         case DESKMENU_ELEMENT_ICON:
         case DESKMENU_ELEMENT_COMMAND:
-            deskmenu->current_item->current_element = element_type;
+            if (deskmenu->current_item)
+                deskmenu->current_item->current_element = element_type;
             break;
 
         default:
@@ -237,6 +238,9 @@ text (GMarkupParseContext *context,
 {
     Deskmenu *deskmenu = DESKMENU (user_data);
     DeskmenuItem *item = deskmenu->current_item;
+
+    if (deskmenu->stop_parsing)
+        return;
 
     if (!(item && item->current_element))
         return;
@@ -283,12 +287,20 @@ end_element (GMarkupParseContext *context,
     element_type = (DeskmenuElementType) GPOINTER_TO_INT (g_hash_table_lookup 
         (deskmenu->element_hash, element_name));
 
+    if (deskmenu->stop_parsing)
+        return;
+
     switch (element_type)
     {
         case DESKMENU_ELEMENT_MENU:
             parent = g_object_get_data (G_OBJECT (deskmenu->current_menu), 
                 "parent menu");
+
+            if (deskmenu->current_menu == deskmenu->menu) /* we're done */
+                deskmenu->stop_parsing = TRUE;
+
             deskmenu->current_menu = parent;
+
             break;
 
         case DESKMENU_ELEMENT_ITEM:
@@ -351,6 +363,7 @@ deskmenu_init (Deskmenu *deskmenu)
     deskmenu->menu = NULL;
     deskmenu->current_menu = NULL;
     deskmenu->current_item = NULL;
+    deskmenu->stop_parsing = FALSE;
 
     deskmenu->item_hash = g_hash_table_new (g_str_hash, g_str_equal);
 

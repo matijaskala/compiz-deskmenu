@@ -97,117 +97,172 @@ activate_window (GtkWidget  *widget,
     wnck_window_activate (window, timestamp);
 }
 
-void
-deskmenu_windowlist_update (DeskmenuWindowlist *windowlist)
+gint dmwin_for_window (DeskmenuWindow *dmwin, 
+                       WnckWindow *window)
 {
-    GList *list, *tmp, *current_items;
-    char *name, *ante, *post;
-    GtkWidget *item, *label;
-    WnckWindow *window;
-    GdkPixbuf *pixbuf;
+    if (dmwin->window == window)
+        return 0;
+    else
+        return -1; /* keep searching */
+}
 
-    current_items = gtk_container_get_children 
-        (GTK_CONTAINER (windowlist->menu));
 
-    list = wnck_screen_get_windows (windowlist->screen);
-    gboolean reuse, free_pixbuf;
-    for (tmp = list; tmp != NULL; tmp = tmp->next)
+void window_update (WnckWindow *window, 
+                    DeskmenuWindow* dmwin)
+{
+    gchar *name, *ante, *post;
+
+    if (wnck_window_is_shaded (window))
     {
-        window = tmp->data;        
+        ante = "=";
+        post = "=";
 
-        if (wnck_window_is_skip_tasklist (window))
-            continue;
-
-        reuse = FALSE;
-        if (current_items)
-        {
-            if (g_object_get_data (G_OBJECT (current_items->data), 
-                "wnck window") == window)
-                reuse = TRUE;
-            else
-                /* the window is gone or moved */
-                gtk_widget_destroy (current_items->data);
-        }
-
-        if (wnck_window_is_shaded (window))
-        {
-            ante = "=";
-            post = "=";
-
-        }
-        else if (wnck_window_is_minimized (window))
-        {
-            ante = "[";
-            post = "]";
-        }
-        else
-        {
-            ante = "";
-            post = "";
-        }
-
-        name = g_strconcat (ante, wnck_window_get_name (window), post, NULL);
-        if (!reuse)
-        {
-            item = gtk_image_menu_item_new ();
-            g_object_set_data (G_OBJECT (item), "wnck window", window);
-            label = gtk_label_new (NULL);
-            gtk_container_add (GTK_CONTAINER (item), label);
-        }
-        else
-        {
-            item = current_items->data;
-            label = gtk_container_get_children (GTK_CONTAINER (item))->data;
-        }
-
-        gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
-        gtk_label_set_ellipsize (GTK_LABEL (label),
-                           PANGO_ELLIPSIZE_END);
-
-        gtk_label_set_text (GTK_LABEL (label), name);
-
-        gtk_widget_set_size_request (label,
-                               wnck_selector_get_width ((windowlist->menu),
-                                                        name), -1);
-        pixbuf = wnck_window_get_mini_icon (window); 
-        free_pixbuf = FALSE;    
-        if (wnck_window_is_minimized (window))
-        {
-            pixbuf = wnck_selector_dimm_icon (pixbuf);
-            free_pixbuf = TRUE;
-        }
-
-        gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (item), 
-            gtk_image_new_from_pixbuf (pixbuf));
-        if (!reuse)
-        {
-            g_signal_connect (G_OBJECT (item), "activate", 
-                G_CALLBACK (activate_window), window);
-            gtk_menu_shell_append (GTK_MENU_SHELL (windowlist->menu), 
-                item);
-        }
-        g_free (name);
-    
-        if (free_pixbuf)
-            g_object_unref (pixbuf);
-
-        if (current_items)
-            current_items = current_items->next;
-        
+    }
+    else if (wnck_window_is_minimized (window))
+    {
+        ante = "[";
+        post = "]";
+    }
+    else
+    {
+        ante = "";
+        post = "";
     }
 
-    gtk_widget_show_all (windowlist->menu);
+    name = g_strconcat (ante, wnck_window_get_name (window), post, NULL);
 
+    gtk_label_set_text (GTK_LABEL (dmwin->label), name);
+
+    gtk_widget_set_size_request (dmwin->label,
+        wnck_selector_get_width ((dmwin->windowlist->menu), name), -1);
+
+    g_free (name);
+
+    GdkPixbuf *pixbuf;
+    gboolean free_pixbuf;
+
+    pixbuf = wnck_window_get_mini_icon (window); 
+    free_pixbuf = FALSE;    
+    if (wnck_window_is_minimized (window))
+    {
+        pixbuf = wnck_selector_dimm_icon (pixbuf);
+        free_pixbuf = TRUE;
+    }
+
+    gtk_image_set_from_pixbuf (GTK_IMAGE (dmwin->image), pixbuf);
+
+    if (free_pixbuf)
+        g_object_unref (pixbuf);
+}
+
+void window_state_changed (WnckWindow *window, WnckWindowState changed_state,
+                           WnckWindowState new_state, DeskmenuWindow *dmwin)
+{
+    window_update (window, dmwin);
+}
+
+DeskmenuWindow*
+deskmenu_windowlist_window_new (WnckWindow *window,
+                                DeskmenuWindowlist *windowlist)
+{
+    DeskmenuWindow *dmwin;
+
+    dmwin = g_slice_new0 (DeskmenuWindow);
+    dmwin->window = window;
+    dmwin->windowlist = windowlist;
+
+    dmwin->item = gtk_image_menu_item_new ();
+
+    dmwin->label = gtk_label_new (NULL);
+    gtk_container_add (GTK_CONTAINER (dmwin->item), dmwin->label);
+
+    gtk_misc_set_alignment (GTK_MISC (dmwin->label), 0.0, 0.5);
+    gtk_label_set_ellipsize (GTK_LABEL (dmwin->label), PANGO_ELLIPSIZE_END);
+
+    dmwin->image = gtk_image_new ();
+
+    gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (dmwin->item),
+        dmwin->image);
+
+    g_signal_connect (G_OBJECT (dmwin->item), "activate", 
+        G_CALLBACK (activate_window), window);
+
+    gtk_menu_shell_append (GTK_MENU_SHELL (windowlist->menu), 
+        dmwin->item);
+
+    window_update (window, dmwin);
+
+    g_signal_connect (G_OBJECT (window), "name-changed", 
+        G_CALLBACK (window_update), dmwin);
+
+    g_signal_connect (G_OBJECT (window), "icon-changed", 
+        G_CALLBACK (window_update), dmwin);
+
+    g_signal_connect (G_OBJECT (window), "state-changed", 
+        G_CALLBACK (window_state_changed), dmwin);
+
+    gtk_widget_show_all (dmwin->item);
+
+    return dmwin;
+}
+
+void screen_window_opened (WnckScreen *screen, WnckWindow *window,
+                           DeskmenuWindowlist *windowlist)
+{
+    if (wnck_window_is_skip_tasklist (window))
+        return;
+
+    DeskmenuWindow *dmwin;
+    dmwin = deskmenu_windowlist_window_new (window, windowlist);
+    windowlist->windows = g_list_append (windowlist->windows, dmwin);
+}
+
+void screen_window_closed (WnckScreen *screen, WnckWindow *window,
+                           DeskmenuWindowlist *windowlist)
+{
+    DeskmenuWindow *dmwin;
+    dmwin = (DeskmenuWindow *) g_list_find_custom (windowlist->windows, window,
+        (GCompareFunc) dmwin_for_window);
+    if (!dmwin)
+    {
+        g_debug ("Leaked DeskmenuWin struct for closed window with name: %s\n", 
+            wnck_window_get_name (window));
+        return;
+    }
+    
+    gtk_widget_destroy (dmwin->image);
+    gtk_widget_destroy (dmwin->label);
+    gtk_widget_destroy (dmwin->item);
+    g_slice_free (DeskmenuWindow, dmwin);
+    windowlist->windows = g_list_remove (windowlist->windows, dmwin);
 }
 
 DeskmenuWindowlist*
 deskmenu_windowlist_new (void)
 {
     DeskmenuWindowlist *windowlist;
+    DeskmenuWindow *dmwin;
     windowlist = g_slice_new0 (DeskmenuWindowlist);
     windowlist->screen = wnck_screen_get_default ();
     wnck_screen_force_update (windowlist->screen);
     windowlist->menu = gtk_menu_new ();
+
+    GList *list = wnck_screen_get_windows (windowlist->screen);
+
+    for (; list; list = list->next)
+    {
+        if (wnck_window_is_skip_tasklist (list->data))
+            continue;
+        dmwin = deskmenu_windowlist_window_new (list->data, windowlist);
+        windowlist->windows = g_list_prepend (windowlist->windows, dmwin);
+    }
+    windowlist->windows = g_list_reverse (windowlist->windows);
+
+    g_signal_connect (G_OBJECT (windowlist->screen), "window-opened",
+        G_CALLBACK (screen_window_opened), windowlist);
+
+    g_signal_connect (G_OBJECT (windowlist->screen), "window-closed",
+        G_CALLBACK (screen_window_opened), windowlist);
 
     return windowlist;
 }
