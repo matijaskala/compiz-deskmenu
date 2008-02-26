@@ -66,7 +66,6 @@ struct Deskmenu
     GHashTable *item_hash;
     GHashTable *element_hash;
     GHookList *show_hooks;
-    gboolean stop_parsing;
 };
 
 struct DeskmenuClass

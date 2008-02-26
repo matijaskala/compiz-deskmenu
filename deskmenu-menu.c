@@ -152,11 +152,19 @@ start_element (GMarkupParseContext *context,
     const gchar **ncursor = attr_names, **vcursor = attr_values;
     GtkWidget *item, *menu;
 
-    if (deskmenu->stop_parsing)
-        return;
-
     element_type = (DeskmenuElementType) GPOINTER_TO_INT (g_hash_table_lookup 
         (deskmenu->element_hash, element_name));
+
+    if ((deskmenu->menu && !deskmenu->current_menu)
+       || (!deskmenu->menu && element_type != DESKMENU_ELEMENT_MENU)) 
+    {
+        gint line_num, char_num;
+        g_markup_parse_context_get_position (context, &line_num, &char_num);     
+        g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
+            "Error on line %d char %d: Element '%s' declared outside of "
+            "toplevel menu element", line_num, char_num, element_name);
+        return;
+    }
 
     switch (element_type)
     {
@@ -239,9 +247,6 @@ text (GMarkupParseContext *context,
     Deskmenu *deskmenu = DESKMENU (user_data);
     DeskmenuItem *item = deskmenu->current_item;
 
-    if (deskmenu->stop_parsing)
-        return;
-
     if (!(item && item->current_element))
         return;
 
@@ -287,17 +292,11 @@ end_element (GMarkupParseContext *context,
     element_type = (DeskmenuElementType) GPOINTER_TO_INT (g_hash_table_lookup 
         (deskmenu->element_hash, element_name));
 
-    if (deskmenu->stop_parsing)
-        return;
-
     switch (element_type)
     {
         case DESKMENU_ELEMENT_MENU:
             parent = g_object_get_data (G_OBJECT (deskmenu->current_menu), 
                 "parent menu");
-
-            if (deskmenu->current_menu == deskmenu->menu) /* we're done */
-                deskmenu->stop_parsing = TRUE;
 
             deskmenu->current_menu = parent;
 
@@ -363,7 +362,6 @@ deskmenu_init (Deskmenu *deskmenu)
     deskmenu->menu = NULL;
     deskmenu->current_menu = NULL;
     deskmenu->current_item = NULL;
-    deskmenu->stop_parsing = FALSE;
 
     deskmenu->item_hash = g_hash_table_new (g_str_hash, g_str_equal);
 
@@ -433,11 +431,12 @@ deskmenu_init (Deskmenu *deskmenu)
         exit (1);
     }
 
-    if (!g_markup_parse_context_parse (context, text, length, NULL))
+    GError *error = NULL;
+
+    if (!g_markup_parse_context_parse (context, text, length, &error))
     {
-        int line, column;
-        g_markup_parse_context_get_position (context, &line, &column);
-        g_print ("Parse of %s failed at line %d \n", configpath, line);
+        g_print ("Parse of %s failed with message: %s \n",
+            configpath, error->message);
         exit (1);
     }
 
