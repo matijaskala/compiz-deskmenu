@@ -25,7 +25,7 @@ install: all
 	mkdir -p $(DESTDIR)/etc/xdg/compiz/deskmenu/
 	install menu.xml $(DESTDIR)/etc/xdg/compiz/deskmenu/
 	mkdir -p $(DESTDIR)$(PREFIX)/share/dbus-1/services/
-	install org.compiz_fusion.deskmenu.service $(DESTDIR)$(PREFIX)/usr/share/dbus-1/services/
+	install org.compiz_fusion.deskmenu.service $(DESTDIR)$(PREFIX)/share/dbus-1/services/
 
 clean:
 	rm -f compiz-deskmenu compiz-deskmenu-menu deskmenu-glue.h
