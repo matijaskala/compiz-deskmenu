@@ -433,7 +433,8 @@ deskmenu_init (Deskmenu *deskmenu)
 
     GError *error = NULL;
 
-    if (!g_markup_parse_context_parse (context, text, length, &error))
+    if (!g_markup_parse_context_parse (context, text, length, &error)
+        || !g_markup_parse_context_end_parse (context, &error))
     {
         g_print ("Parse of %s failed with message: %s \n",
             configpath, error->message);
@@ -441,6 +442,7 @@ deskmenu_init (Deskmenu *deskmenu)
     }
 
     g_free(text);
+    g_free (configpath);
     g_markup_parse_context_free (context);
 
     gtk_widget_show_all (deskmenu->menu);
