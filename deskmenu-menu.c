@@ -74,22 +74,68 @@ launcher_activated (GtkWidget *widget,
 }
 
 static void
+launcher_name_exec_update (GtkWidget *label)
+{
+    gchar *exec, *stdout;
+    exec = g_object_get_data (G_OBJECT (label), "exec");
+    g_spawn_command_line_sync (exec, &stdout, NULL, NULL, NULL);
+    gtk_label_set_text (GTK_LABEL (label), g_strstrip(stdout));
+    g_free (stdout);
+
+}
+
+static void
 deskmenu_construct_item (Deskmenu *deskmenu)
 {
     DeskmenuItem *item = deskmenu->current_item;
     GtkWidget *menu_item;
+    gchar *name, *icon, *command;
 
     switch (item->type)
     {
         case DESKMENU_ITEM_LAUNCHER:
-            menu_item = gtk_image_menu_item_new_with_label
-                (g_strstrip (item->name->str));
-            gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menu_item), 
-                gtk_image_new_from_icon_name (g_strstrip (item->icon->str),
-                    GTK_ICON_SIZE_MENU));
-            g_signal_connect (G_OBJECT (menu_item), "activate",
-                G_CALLBACK (launcher_activated), g_strstrip (g_strdup
-                    (item->command->str)));
+            if (item->name_exec)
+            {
+                GtkWidget *label;
+                GHook *hook;
+                
+                name = g_strstrip (item->name->str);
+
+                menu_item = gtk_image_menu_item_new ();
+                label = gtk_label_new (NULL);
+                g_object_set_data (G_OBJECT (label), "exec", g_strdup (name));
+                gtk_container_add (GTK_CONTAINER (menu_item), label);
+                hook = g_hook_alloc (deskmenu->show_hooks);
+
+                hook->data = (gpointer) label;
+                hook->func = (GHookFunc *) launcher_name_exec_update;
+                g_hook_append (deskmenu->show_hooks, hook);
+            }
+            else
+            {
+                if (item->name)
+                    name = g_strstrip (item->name->str);
+                else
+                    name = "";
+
+                menu_item = gtk_image_menu_item_new_with_label (name);
+
+            }
+
+            if (item->icon)
+            {
+                icon = g_strstrip (item->icon->str);
+                gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menu_item), 
+                    gtk_image_new_from_icon_name (icon, GTK_ICON_SIZE_MENU));
+            }
+        
+            if (item->command)
+            {
+                command = g_strstrip (item->icon->str);
+                g_signal_connect (G_OBJECT (menu_item), "activate",
+                    G_CALLBACK (launcher_activated), g_strdup (command));
+            }
+
             gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), 
                 menu_item);
             break;
@@ -224,6 +270,14 @@ start_element (GMarkupParseContext *context,
             break;
 
         case DESKMENU_ELEMENT_NAME:
+             while (*ncursor)
+                {
+                    if ((strcmp (*ncursor, "exec") == 0)
+                        && (strcmp (*vcursor, "true") == 0))
+                        deskmenu->current_item->name_exec = TRUE;
+                    ncursor++;
+                    vcursor++;
+                } /* no break here to let it fall through */
         case DESKMENU_ELEMENT_ICON:
         case DESKMENU_ELEMENT_COMMAND:
             if (deskmenu->current_item)
@@ -332,8 +386,6 @@ static GMarkupParser parser = {
     NULL,
     NULL
 };
-
-
 
 
 /* Class init */

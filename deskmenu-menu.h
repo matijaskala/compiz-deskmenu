@@ -49,6 +49,7 @@ struct DeskmenuItem
     DeskmenuItemType type;
     DeskmenuElementType current_element;
     GString *name;
+    gboolean name_exec;
     GString *icon;
     GString *command;
 };
