@@ -254,22 +254,10 @@ DeskmenuWindowlist*
 deskmenu_windowlist_new (void)
 {
     DeskmenuWindowlist *windowlist;
-    DeskmenuWindow *dmwin;
     windowlist = g_slice_new0 (DeskmenuWindowlist);
     windowlist->screen = wnck_screen_get_default ();
-    wnck_screen_force_update (windowlist->screen);
+
     windowlist->menu = gtk_menu_new ();
-
-    GList *list = wnck_screen_get_windows (windowlist->screen);
-
-    for (; list; list = list->next)
-    {
-        if (wnck_window_is_skip_tasklist (list->data))
-            continue;
-        dmwin = deskmenu_windowlist_window_new (list->data, windowlist);
-        windowlist->windows = g_list_prepend (windowlist->windows, dmwin);
-    }
-    windowlist->windows = g_list_reverse (windowlist->windows);
 
     g_signal_connect (G_OBJECT (windowlist->screen), "window-opened",
         G_CALLBACK (screen_window_opened), windowlist);
@@ -396,6 +384,9 @@ deskmenu_vplist_update (WnckScreen *screen, DeskmenuVplist *vplist)
     guint new_count, current;
     /* get dimensions */
 
+    vplist->workspace = wnck_screen_get_workspace
+        (vplist->screen, 0);
+
     vplist->screen_width = wnck_screen_get_width (screen);
     vplist->workspace_width = wnck_workspace_get_width
         (vplist->workspace);
@@ -482,11 +473,6 @@ deskmenu_vplist_new (void)
     vplist = g_slice_new0 (DeskmenuVplist);
     vplist->screen = wnck_screen_get_default ();
 
-    wnck_screen_force_update (vplist->screen);
-
-    vplist->workspace = wnck_screen_get_workspace
-        (vplist->screen, 0);
-
     vplist->menu = gtk_menu_new ();
 
     vplist->go_left = deskmenu_vplist_make_go_item (vplist, WNCK_MOTION_LEFT,
@@ -503,8 +489,6 @@ deskmenu_vplist_new (void)
 
     gtk_menu_shell_append (GTK_MENU_SHELL (vplist->menu), 
         gtk_separator_menu_item_new ());
-
-    deskmenu_vplist_update (vplist->screen, vplist);
 
     g_signal_connect (G_OBJECT (vplist->screen), "viewports-changed",
         G_CALLBACK (deskmenu_vplist_update), vplist);
