@@ -24,7 +24,7 @@ install: all
 	install compiz-deskmenu-menu $(DESTDIR)$(PREFIX)/bin/
 	mkdir -p $(DESTDIR)/etc/xdg/compiz/deskmenu/
 	install menu.xml $(DESTDIR)/etc/xdg/compiz/deskmenu/
-	mkdir -p $(DESTDIR)$(PREFIX)/usr/share/dbus-1/services/
+	mkdir -p $(DESTDIR)$(PREFIX)/share/dbus-1/services/
 	install org.compiz_fusion.deskmenu.service $(DESTDIR)$(PREFIX)/usr/share/dbus-1/services/
 
 clean:
