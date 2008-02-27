@@ -132,7 +132,7 @@ deskmenu_construct_item (Deskmenu *deskmenu)
         
             if (item->command)
             {
-                command = g_strstrip (item->icon->str);
+                command = g_strstrip (item->command->str);
                 g_signal_connect (G_OBJECT (menu_item), "activate",
                     G_CALLBACK (launcher_activated), g_strdup (command));
             }
