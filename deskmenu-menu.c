@@ -78,10 +78,11 @@ launcher_name_exec_update (GtkWidget *label)
 {
     gchar *exec, *stdout;
     exec = g_object_get_data (G_OBJECT (label), "exec");
-    g_spawn_command_line_sync (exec, &stdout, NULL, NULL, NULL);
-    gtk_label_set_text (GTK_LABEL (label), g_strstrip(stdout));
+    if (g_spawn_command_line_sync (exec, &stdout, NULL, NULL, NULL))
+        gtk_label_set_text (GTK_LABEL (label), g_strstrip(stdout));
+    else
+        gtk_label_set_text (GTK_LABEL (label), "execution error");
     g_free (stdout);
-
 }
 
 static void
