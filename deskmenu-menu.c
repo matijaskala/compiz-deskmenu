@@ -431,11 +431,6 @@ deskmenu_class_init (DeskmenuClass *deskmenu_class)
 static void 
 deskmenu_init (Deskmenu *deskmenu)
 {
-    gchar *configpath;
-    
-    configpath = g_build_path (G_DIR_SEPARATOR_S,
-                               g_get_user_config_dir (),
-                               "compiz", "deskmenu", "menu.xml", NULL);
 
     deskmenu->show_hooks = g_slice_new0 (GHookList);
 
@@ -474,13 +469,28 @@ deskmenu_init (Deskmenu *deskmenu)
     g_hash_table_insert (deskmenu->element_hash, "command", 
         GINT_TO_POINTER (DESKMENU_ELEMENT_COMMAND));
 
-    char *text;
+
+
+
+}
+
+static void
+deskmenu_parse_file (Deskmenu *deskmenu,
+                     gchar *configpath)
+{
+    GError *error = NULL;
+    gboolean success = FALSE;
+    gchar *text;
     gsize length;
+    
+    if (!configpath)
+        configpath = g_build_path (G_DIR_SEPARATOR_S, g_get_user_config_dir (),
+                                   "compiz", "deskmenu", "menu.xml",
+                                   NULL);
+
     GMarkupParseContext *context = g_markup_parse_context_new (&parser,
         0, deskmenu, NULL);
 
-
-    gboolean success = FALSE;
     if (!g_file_get_contents (configpath, &text, &length, NULL))
     {
         const gchar* const *cursor = g_get_system_config_dirs ();
@@ -490,9 +500,9 @@ deskmenu_init (Deskmenu *deskmenu)
             g_free (configpath);
             g_free (path);
             path = g_strdup (*cursor);
-            configpath = g_build_path (G_DIR_SEPARATOR_S,
-                         path,
-                         "compiz", "deskmenu", "menu.xml", NULL);
+            configpath = g_build_path (G_DIR_SEPARATOR_S, path,
+                                       "compiz", "deskmenu", "menu.xml",
+                                       NULL);
 
             if (g_file_get_contents (configpath, &text, &length, NULL))
             {
@@ -513,8 +523,6 @@ deskmenu_init (Deskmenu *deskmenu)
         g_print ("Couldn't find a menu file\n");
         exit (1);
     }
-
-    GError *error = NULL;
 
     if (!g_markup_parse_context_parse (context, text, length, &error)
         || !g_markup_parse_context_end_parse (context, &error))
@@ -567,6 +575,25 @@ main (int    argc,
 
     g_type_init ();
 
+    gchar *filename = NULL;
+    GOptionContext *context;
+    GOptionEntry entries[] =
+    {
+        { "menu", 'm', 0, G_OPTION_ARG_FILENAME, &filename,
+            "Use FILE instead of the default menu file", "FILE" },
+        { NULL, 0, 0, 0, NULL, NULL, NULL }
+    };
+
+    context = g_option_context_new (NULL);
+    g_option_context_add_main_entries (context, entries, NULL);
+    g_option_context_add_group (context, gtk_get_option_group (TRUE));
+    if (!g_option_context_parse (context, &argc, &argv, &error))
+    {
+        g_print ("option parsing failed: %s\n", error->message);
+        exit (1);
+    }
+    g_option_context_free (context);
+
     /* Obtain a connection to the session bus */
     connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
     if (connection == NULL)
@@ -575,6 +602,8 @@ main (int    argc,
     gtk_init (&argc, &argv);
 
     deskmenu = g_object_new (DESKMENU_TYPE, NULL);
+
+    deskmenu_parse_file (DESKMENU (deskmenu), filename);
 
     dbus_g_connection_register_g_object (connection,
                                          DESKMENU_PATH_DBUS,
