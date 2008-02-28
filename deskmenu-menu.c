@@ -299,8 +299,8 @@ start_element (GMarkupParseContext *context,
         case DESKMENU_ELEMENT_NAME:
              while (*ncursor)
                 {
-                    if ((strcmp (*ncursor, "exec") == 0)
-                        && (strcmp (*vcursor, "true") == 0))
+                    if ((strcmp (*ncursor, "mode") == 0)
+                        && (strcmp (*vcursor, "exec") == 0))
                         deskmenu->current_item->name_exec = TRUE;
                     ncursor++;
                     vcursor++;
