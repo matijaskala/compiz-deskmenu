@@ -103,7 +103,7 @@ deskmenu_construct_item (Deskmenu *deskmenu)
                 name = g_strstrip (item->name->str);
 
                 menu_item = gtk_image_menu_item_new ();
-                label = gtk_label_new (NULL);
+                label = gtk_label_new_with_mnemonic (NULL);
                 gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
 
                 g_object_set_data (G_OBJECT (label), "exec", g_strdup (name));
@@ -121,7 +121,7 @@ deskmenu_construct_item (Deskmenu *deskmenu)
                 else
                     name = "";
 
-                menu_item = gtk_image_menu_item_new_with_label (name);
+                menu_item = gtk_image_menu_item_new_with_mnemonic (name);
 
             }
 
@@ -143,14 +143,9 @@ deskmenu_construct_item (Deskmenu *deskmenu)
                 menu_item);
             break;
 
-        case DESKMENU_ITEM_SEPARATOR:
-            menu_item = gtk_separator_menu_item_new ();
-            gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), 
-                menu_item);
-            break;
 #if HAVE_WNCK
         case DESKMENU_ITEM_WINDOWLIST:
-            menu_item = gtk_menu_item_new_with_label ("Windows");
+            menu_item = gtk_menu_item_new_with_mnemonic ("_Windows");
 
             DeskmenuWindowlist *windowlist = deskmenu_windowlist_new ();
 
@@ -161,7 +156,7 @@ deskmenu_construct_item (Deskmenu *deskmenu)
             break;
 
         case DESKMENU_ITEM_VIEWPORTLIST:
-            menu_item = gtk_menu_item_new_with_label ("Viewports");
+            menu_item = gtk_menu_item_new_with_mnemonic ("_Viewports");
 
             DeskmenuVplist *vplist = deskmenu_vplist_new ();
             gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_item),
@@ -171,7 +166,7 @@ deskmenu_construct_item (Deskmenu *deskmenu)
             break;
 #endif
         case DESKMENU_ITEM_RELOAD:
-            menu_item = gtk_image_menu_item_new_with_label ("Reload");
+            menu_item = gtk_image_menu_item_new_with_mnemonic ("_Reload");
             gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menu_item), 
                 gtk_image_new_from_stock (GTK_STOCK_REFRESH, 
                     GTK_ICON_SIZE_MENU));
@@ -252,9 +247,9 @@ start_element (GMarkupParseContext *context,
                     vcursor++;
                 }
                 if (name)
-                    item = gtk_menu_item_new_with_label (name);
+                    item = gtk_menu_item_new_with_mnemonic (name);
                 else
-                    item = gtk_menu_item_new_with_label ("");
+                    item = gtk_menu_item_new_with_mnemonic ("");
                 gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), 
                     item);
                 menu = gtk_menu_new ();
@@ -267,6 +262,9 @@ start_element (GMarkupParseContext *context,
             }
             break;
         
+        case DESKMENU_ELEMENT_SEPARATOR:
+            break; /* build it in the end function */
+
         case DESKMENU_ELEMENT_ITEM:
 
             if (deskmenu->current_item != NULL)
@@ -369,7 +367,7 @@ end_element (GMarkupParseContext *context,
 
     DeskmenuElementType element_type;
     Deskmenu *deskmenu = DESKMENU (user_data);
-    GtkWidget *parent;
+    GtkWidget *parent, *item;
     element_type = (DeskmenuElementType) GPOINTER_TO_INT (g_hash_table_lookup 
         (deskmenu->element_hash, element_name));
 
@@ -384,6 +382,12 @@ end_element (GMarkupParseContext *context,
 
             deskmenu->current_menu = parent;
 
+            break;
+
+        case DESKMENU_ELEMENT_SEPARATOR:
+            item = gtk_separator_menu_item_new ();
+            gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu), 
+                item);
             break;
 
         case DESKMENU_ELEMENT_ITEM:
@@ -445,8 +449,6 @@ deskmenu_init (Deskmenu *deskmenu)
 
     g_hash_table_insert (deskmenu->item_hash, "launcher",
         GINT_TO_POINTER (DESKMENU_ITEM_LAUNCHER));
-    g_hash_table_insert (deskmenu->item_hash, "separator",
-        GINT_TO_POINTER (DESKMENU_ITEM_SEPARATOR));
 #if HAVE_WNCK
     g_hash_table_insert (deskmenu->item_hash, "windowlist",
         GINT_TO_POINTER (DESKMENU_ITEM_WINDOWLIST));
@@ -460,6 +462,8 @@ deskmenu_init (Deskmenu *deskmenu)
     
     g_hash_table_insert (deskmenu->element_hash, "menu", 
         GINT_TO_POINTER (DESKMENU_ELEMENT_MENU));
+    g_hash_table_insert (deskmenu->element_hash, "separator",
+        GINT_TO_POINTER (DESKMENU_ELEMENT_SEPARATOR));
     g_hash_table_insert (deskmenu->element_hash, "item", 
         GINT_TO_POINTER (DESKMENU_ELEMENT_ITEM));
     g_hash_table_insert (deskmenu->element_hash, "name", 

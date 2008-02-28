@@ -1,28 +1,28 @@
 <menu>
+  <item type="launcher">
+     <name>_Epiphany</name>
+     <icon>gnome-web-browser</icon>
+     <command>epiphany</command>
+  </item>
+  <item type="launcher">
+    <name>_Terminal</name>
+    <icon>gnome-terminal</icon>
+    <command>gnome-terminal</command>
+  </item>
+  <menu name="E_xtras">
     <item type="launcher">
-        <name>Epiphany</name>
-        <icon>gnome-web-browser</icon>
-        <command>epiphany</command>
+      <name>Te_xt Editor</name>
+      <icon>accessories-text-editor</icon>
+      <command>gedit</command>
     </item>
     <item type="launcher">
-        <name>Terminal</name>
-        <icon>gnome-terminal</icon>
-        <command>gnome-terminal</command>
+      <name>_Aisleriot Solitaire</name>
+      <icon>gnome-aisleriot</icon>
+      <command>sol</command>
     </item>
-    <menu name="Extras">
-        <item type="launcher">
-            <name>Text Editor</name>
-            <icon>accessories-text-editor</icon>
-            <command>gedit</command>
-        </item>
-        <item type="launcher">
-            <name>Aisleriot Solitaire</name>
-            <icon>gnome-aisleriot</icon>
-            <command>sol</command>
-        </item>
-    </menu>
-    <item type="separator"/>
-    <item type="windowlist"/>
-    <item type="viewportlist"/>
-    <item type="reload"/>
+  </menu>
+  <separator/>
+  <item type="windowlist"/>
+  <item type="viewportlist"/>
+  <item type="reload"/>
 </menu>
