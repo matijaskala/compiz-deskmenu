@@ -275,7 +275,7 @@ deskmenu_vplist_goto (GtkWidget      *widget,
     guint viewport;
     viewport = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (widget), 
         "viewport"));
-    guint x, y;
+    guint x, y, i;
 
     x = viewport % vplist->hsize;
     if (!x)
@@ -286,7 +286,7 @@ deskmenu_vplist_goto (GtkWidget      *widget,
     y = 0;
     if (viewport > vplist->hsize)
     {
-        gint i = 0;
+        i = 0;
         while (i < (viewport - vplist->hsize))
         {
             i += vplist->hsize;
@@ -423,7 +423,7 @@ deskmenu_vplist_update (WnckScreen *screen, DeskmenuVplist *vplist)
     if (new_count != vplist->old_count)
     {
         GtkWidget **items = NULL, *item;
-        gint i;
+        guint i;
         items = vplist->goto_items;
         for (i = 0; i < vplist->old_count; i++)
         {

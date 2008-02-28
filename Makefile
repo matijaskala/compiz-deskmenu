@@ -2,7 +2,8 @@ PREFIX := /usr
 
 CPPFLAGS := `pkg-config --cflags dbus-glib-1 gdk-2.0 gtk+-2.0 libwnck-1.0`
 CPPFLAGS_CLIENT := `pkg-config --cflags dbus-glib-1`
-CFLAGS := -O2 -Wall
+WARNINGS := -Wall -Wextra -Wno-unused-parameter
+CFLAGS := -O2 $(WARNINGS)
 LDFLAGS := `pkg-config --libs dbus-glib-1 gdk-2.0 gtk+-2.0 libwnck-1.0`
 LDFLAGS_CLIENT := `pkg-config --libs dbus-glib-1`
 
