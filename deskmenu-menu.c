@@ -104,6 +104,8 @@ deskmenu_construct_item (Deskmenu *deskmenu)
 
                 menu_item = gtk_image_menu_item_new ();
                 label = gtk_label_new (NULL);
+                gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+
                 g_object_set_data (G_OBJECT (label), "exec", g_strdup (name));
                 gtk_container_add (GTK_CONTAINER (menu_item), label);
                 hook = g_hook_alloc (deskmenu->show_hooks);
