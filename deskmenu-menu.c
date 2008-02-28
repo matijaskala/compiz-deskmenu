@@ -216,6 +216,18 @@ start_element (GMarkupParseContext *context,
     switch (element_type)
     {
         case DESKMENU_ELEMENT_MENU:
+
+            if (deskmenu->current_item != NULL)
+            {
+                gint line_num, char_num;
+                g_markup_parse_context_get_position (context, &line_num, 
+                    &char_num);     
+                g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
+                    "Error on line %d char %d: Element 'menu' cannot be nested "
+                    "inside of an item element", line_num, char_num);
+                return;
+            }
+
             if (!deskmenu->menu)
             {
                 deskmenu->menu = gtk_menu_new ();
@@ -254,6 +266,18 @@ start_element (GMarkupParseContext *context,
             break;
         
         case DESKMENU_ELEMENT_ITEM:
+
+            if (deskmenu->current_item != NULL)
+            {
+                gint line_num, char_num;
+                g_markup_parse_context_get_position (context, &line_num, 
+                    &char_num);     
+                g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
+                    "Error on line %d char %d: Element 'item' cannot be nested "
+                    "inside of another item element", line_num, char_num);
+                return;
+            }
+
             deskmenu->current_item = g_slice_new0 (DeskmenuItem);
                 while (*ncursor)
                 {
@@ -350,6 +374,9 @@ end_element (GMarkupParseContext *context,
     switch (element_type)
     {
         case DESKMENU_ELEMENT_MENU:
+
+            g_return_if_fail (deskmenu->current_item == NULL);
+
             parent = g_object_get_data (G_OBJECT (deskmenu->current_menu), 
                 "parent menu");
 
@@ -358,8 +385,9 @@ end_element (GMarkupParseContext *context,
             break;
 
         case DESKMENU_ELEMENT_ITEM:
-            if (!deskmenu->current_item)
-                break;
+
+            g_return_if_fail (deskmenu->current_item != NULL);
+
             /* finally make the item ^_^ */
             deskmenu_construct_item (deskmenu);
 
