@@ -357,7 +357,7 @@ deskmenu_vplist_make_go_item (DeskmenuVplist      *vplist,
                               gchar               *stock_id)
 {
     GtkWidget *item;
-    item = gtk_image_menu_item_new_with_label (name);
+    item = gtk_image_menu_item_new_with_mnemonic (name);
     gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (item),
         gtk_image_new_from_stock (stock_id, GTK_ICON_SIZE_MENU));
     g_object_set_data (G_OBJECT (item), "direction",
@@ -441,8 +441,8 @@ deskmenu_vplist_update (WnckScreen *screen, DeskmenuVplist *vplist)
 
         for (i = 0; i < new_count; i++)
         {
-            text = g_strdup_printf ("Viewport %i", i+1);
-            item = gtk_menu_item_new_with_label (text);
+            text = g_strdup_printf ("Viewport _%i", i+1);
+            item = gtk_menu_item_new_with_mnemonic (text);
             g_object_set_data (G_OBJECT (item), "viewport",
                 GUINT_TO_POINTER (i+1));
             g_signal_connect (G_OBJECT (item), "activate",
@@ -476,16 +476,16 @@ deskmenu_vplist_new (void)
     vplist->menu = gtk_menu_new ();
 
     vplist->go_left = deskmenu_vplist_make_go_item (vplist, WNCK_MOTION_LEFT,
-                  "Viewport Left", GTK_STOCK_GO_BACK);
+                  "Viewport _Left", GTK_STOCK_GO_BACK);
 
     vplist->go_right = deskmenu_vplist_make_go_item (vplist, WNCK_MOTION_RIGHT,
-                  "Viewport Right", GTK_STOCK_GO_FORWARD);
+                  "Viewport _Right", GTK_STOCK_GO_FORWARD);
 
     vplist->go_up =  deskmenu_vplist_make_go_item (vplist, WNCK_MOTION_UP,
-                  "Viewport Up", GTK_STOCK_GO_UP);
+                  "Viewport _Up", GTK_STOCK_GO_UP);
 
     vplist->go_down = deskmenu_vplist_make_go_item (vplist, WNCK_MOTION_DOWN,
-                  "Viewport Down", GTK_STOCK_GO_DOWN);
+                  "Viewport _Down", GTK_STOCK_GO_DOWN);
 
     gtk_menu_shell_append (GTK_MENU_SHELL (vplist->menu), 
         gtk_separator_menu_item_new ());
