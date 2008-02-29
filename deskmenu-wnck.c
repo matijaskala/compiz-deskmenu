@@ -246,9 +246,6 @@ static void
 screen_window_closed (WnckScreen *screen, WnckWindow *window,
                       DeskmenuWindowlist *windowlist)
 {
-    if (wnck_window_is_skip_tasklist (window))
-        return;
-
     DeskmenuWindow *dmwin;
     GList *list;
 
@@ -256,11 +253,7 @@ screen_window_closed (WnckScreen *screen, WnckWindow *window,
         (GCompareFunc) dmwin_for_window);
 
     if (!list)
-    {
-        g_debug ("Leaked DeskmenuWin struct for closed window with name: %s\n", 
-            wnck_window_get_name (window));
         return;
-    }
 
     dmwin = list->data;
 
