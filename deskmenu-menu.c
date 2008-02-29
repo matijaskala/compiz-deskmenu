@@ -17,11 +17,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <dbus/dbus-glib.h>
 #include <dbus/dbus-glib-lowlevel.h>
-#include <glib.h>
-#include <glib-object.h>
-#include <gdk/gdk.h>
 #include <gtk/gtk.h>
 
 #define HAVE_WNCK 1
