@@ -3,6 +3,7 @@ typedef struct DeskmenuWindowlist
 {
     WnckScreen *screen;
     GtkWidget *menu;
+    GtkWidget *empty_item;
     GList *windows;
 } DeskmenuWindowlist;
 

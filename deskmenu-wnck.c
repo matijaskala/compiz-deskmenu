@@ -164,6 +164,25 @@ window_state_changed (WnckWindow *window, WnckWindowState changed_state,
     window_update (window, dmwin);
 }
 
+static void
+windowlist_check_empty (DeskmenuWindowlist *windowlist)
+{
+    if (!windowlist->windows && !windowlist->empty_item)
+    {
+        windowlist->empty_item = gtk_menu_item_new_with_label ("None");
+        gtk_widget_set_sensitive (windowlist->empty_item, FALSE);
+        gtk_menu_shell_append (GTK_MENU_SHELL (windowlist->menu),
+            windowlist->empty_item);
+        gtk_widget_show (windowlist->empty_item);
+    }
+    else if (windowlist->empty_item)
+    {
+        gtk_widget_destroy (windowlist->empty_item);
+        windowlist->empty_item = NULL;
+        
+    }
+}
+
 static DeskmenuWindow*
 deskmenu_windowlist_window_new (WnckWindow *window,
                                 DeskmenuWindowlist *windowlist)
@@ -218,7 +237,9 @@ screen_window_opened (WnckScreen *screen, WnckWindow *window,
 
     DeskmenuWindow *dmwin;
     dmwin = deskmenu_windowlist_window_new (window, windowlist);
-    windowlist->windows = g_list_append (windowlist->windows, dmwin);
+    windowlist->windows = g_list_prepend (windowlist->windows, dmwin);
+
+    windowlist_check_empty (windowlist);
 }
 
 static void
@@ -248,6 +269,8 @@ screen_window_closed (WnckScreen *screen, WnckWindow *window,
     gtk_widget_destroy (dmwin->item);
     g_slice_free (DeskmenuWindow, dmwin);
     windowlist->windows = g_list_remove (windowlist->windows, dmwin);
+
+    windowlist_check_empty (windowlist);
 }
 
 DeskmenuWindowlist*
@@ -264,6 +287,8 @@ deskmenu_windowlist_new (void)
 
     g_signal_connect (G_OBJECT (windowlist->screen), "window-closed",
         G_CALLBACK (screen_window_closed), windowlist);
+
+    windowlist_check_empty (windowlist);
 
     return windowlist;
 }
