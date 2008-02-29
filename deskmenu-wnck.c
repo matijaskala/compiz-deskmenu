@@ -334,24 +334,62 @@ deskmenu_vplist_go_direction (GtkWidget      *widget,
         (G_OBJECT (widget), "direction"));
 
     guint x = vplist->x, y = vplist->y;
-    switch (direction)
+
+    if (!vplist->wrap)
     {
-        case WNCK_MOTION_LEFT:
-            x -= vplist->screen_width;
-            break;
-        case WNCK_MOTION_RIGHT:
-            x += vplist->screen_width;
-            break;
-        case WNCK_MOTION_UP:
-            y -= vplist->screen_height;
-            break;
-        case WNCK_MOTION_DOWN:
-            y += vplist->screen_height;
-            break;
-        default:
-            g_assert_not_reached ();
-            break;
+        switch (direction)
+        {
+            case WNCK_MOTION_LEFT:
+                x -= vplist->screen_width;
+                break;
+            case WNCK_MOTION_RIGHT:
+                x += vplist->screen_width;
+                break;
+            case WNCK_MOTION_UP:
+                y -= vplist->screen_height;
+                break;
+            case WNCK_MOTION_DOWN:
+                y += vplist->screen_height;
+                break;
+            default:
+                g_assert_not_reached ();
+                break;
+        }
     }
+    else
+    {
+        switch (direction)
+        {
+            case WNCK_MOTION_LEFT:
+                if (vplist->screen_width - x > 0)
+                    x = vplist->xmax;
+                else
+                    x -= vplist->screen_width;
+                break;
+            case WNCK_MOTION_RIGHT:
+                if (x + vplist->screen_width > vplist->xmax)
+                    x = 0;
+                else
+                    x += vplist->screen_width;
+                break;
+            case WNCK_MOTION_UP:
+                if (vplist->screen_height - y > 0)
+                    y = vplist->ymax;
+                else
+                    y -= vplist->screen_height;
+                break;
+            case WNCK_MOTION_DOWN:
+                if (y + vplist->screen_height > vplist->ymax)
+                    y = 0;
+                else
+                    y += vplist->screen_height;
+                break;
+            default:
+                g_assert_not_reached ();
+                break;
+        }
+    }
+
     wnck_screen_move_viewport (vplist->screen, x, y);
 }
 
@@ -359,18 +397,35 @@ static gboolean
 deskmenu_vplist_can_move (DeskmenuVplist      *vplist,
                           WnckMotionDirection  direction)
 {
-    switch (direction)
+    if (!vplist->wrap)
     {
-        case WNCK_MOTION_LEFT:
-            return vplist->x;
-        case WNCK_MOTION_RIGHT:
-            return (vplist->x != vplist->xmax);
-        case WNCK_MOTION_UP:
-            return vplist->y;
-        case WNCK_MOTION_DOWN:
-            return (vplist->y != vplist->ymax);
-        default:
-            break;
+        switch (direction)
+        {
+            case WNCK_MOTION_LEFT:
+                return vplist->x;
+            case WNCK_MOTION_RIGHT:
+                return (vplist->x != vplist->xmax);
+            case WNCK_MOTION_UP:
+                return vplist->y;
+            case WNCK_MOTION_DOWN:
+                return (vplist->y != vplist->ymax);
+            default:
+                break;
+        }
+    }
+    else
+    {
+        switch (direction)
+        {
+            case WNCK_MOTION_LEFT:
+            case WNCK_MOTION_RIGHT:
+                return (vplist->hsize > 1);
+            case WNCK_MOTION_UP:
+            case WNCK_MOTION_DOWN:
+                return (vplist->vsize > 1);
+            default:
+                break;
+        }
     }
     g_assert_not_reached ();
 }
@@ -481,7 +536,9 @@ deskmenu_vplist_update (WnckScreen *screen, DeskmenuVplist *vplist)
 
     if (current != vplist->old_vpid)
     {
-        gtk_widget_set_sensitive (vplist->goto_items[vplist->old_vpid], TRUE);
+        if (vplist->old_vpid <= new_count)
+            gtk_widget_set_sensitive (vplist->goto_items[vplist->old_vpid],
+                TRUE);
         gtk_widget_set_sensitive (vplist->goto_items[current], FALSE);
         vplist->old_vpid = current;
     }

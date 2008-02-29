@@ -159,6 +159,11 @@ deskmenu_construct_item (Deskmenu *deskmenu)
             menu_item = gtk_menu_item_new_with_mnemonic ("_Viewports");
 
             DeskmenuVplist *vplist = deskmenu_vplist_new ();
+
+            if (item->wrap
+                && strcmp (g_strstrip (item->wrap->str), "true") == 0)
+                vplist->wrap = TRUE;
+
             gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_item),
                 vplist->menu);
             gtk_menu_shell_append (GTK_MENU_SHELL (deskmenu->current_menu),
@@ -305,6 +310,7 @@ start_element (GMarkupParseContext *context,
                 } /* no break here to let it fall through */
         case DESKMENU_ELEMENT_ICON:
         case DESKMENU_ELEMENT_COMMAND:
+        case DESKMENU_ELEMENT_WRAP:
             if (deskmenu->current_item)
                 deskmenu->current_item->current_element = element_type;
             break;
@@ -350,6 +356,13 @@ text (GMarkupParseContext *context,
                 item->command = g_string_new_len (text, text_len);
             else
                 g_string_append_len (item->command, text, text_len);
+            break;
+
+        case DESKMENU_ELEMENT_WRAP:
+            if (!item->wrap)
+                item->wrap = g_string_new_len (text, text_len);
+            else
+                g_string_append_len (item->wrap, text, text_len);
             break;
 
         default:
@@ -404,6 +417,8 @@ end_element (GMarkupParseContext *context,
                 g_string_free (deskmenu->current_item->icon, TRUE);
             if (deskmenu->current_item->command)
                 g_string_free (deskmenu->current_item->command, TRUE);
+            if (deskmenu->current_item->wrap)
+                g_string_free (deskmenu->current_item->wrap, TRUE);
             g_slice_free (DeskmenuItem, deskmenu->current_item);
             deskmenu->current_item = NULL;
             break;
@@ -472,9 +487,8 @@ deskmenu_init (Deskmenu *deskmenu)
         GINT_TO_POINTER (DESKMENU_ELEMENT_ICON));
     g_hash_table_insert (deskmenu->element_hash, "command", 
         GINT_TO_POINTER (DESKMENU_ELEMENT_COMMAND));
-
-
-
+    g_hash_table_insert (deskmenu->element_hash, "wrap", 
+        GINT_TO_POINTER (DESKMENU_ELEMENT_WRAP));
 
 }
 

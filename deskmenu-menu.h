@@ -40,7 +40,8 @@ typedef enum
     DESKMENU_ELEMENT_SEPARATOR,
     DESKMENU_ELEMENT_NAME,
     DESKMENU_ELEMENT_ICON,
-    DESKMENU_ELEMENT_COMMAND
+    DESKMENU_ELEMENT_COMMAND,
+    DESKMENU_ELEMENT_WRAP
 } DeskmenuElementType;
 
 
@@ -52,6 +53,7 @@ struct DeskmenuItem
     gboolean name_exec;
     GString *icon;
     GString *command;
+    GString *wrap;
 };
 
 
