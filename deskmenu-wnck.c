@@ -455,7 +455,7 @@ deskmenu_vplist_get_vpid (DeskmenuVplist *vplist)
     guint vpx = vplist->x / vplist->screen_width;
     guint vpy = vplist->y / vplist->screen_height;
     
-    return (vpy * vplist->hsize + vpx);
+    return (vpy * vplist->hsize + vpx + 1);
 }
 
 static void
@@ -531,15 +531,19 @@ deskmenu_vplist_update (WnckScreen *screen, DeskmenuVplist *vplist)
             vplist->goto_items[i] = item;
             g_free (text);
         }
+
+        if ((vplist->old_vpid <= new_count) && vplist->old_vpid)
+            gtk_widget_set_sensitive (vplist->goto_items[vplist->old_vpid - 1],
+                FALSE);
         vplist->old_count = new_count;
     }
 
     if (current != vplist->old_vpid)
     {
-        if (vplist->old_vpid <= new_count)
-            gtk_widget_set_sensitive (vplist->goto_items[vplist->old_vpid],
+        if (vplist->old_vpid <= new_count && vplist->old_vpid)
+            gtk_widget_set_sensitive (vplist->goto_items[vplist->old_vpid - 1],
                 TRUE);
-        gtk_widget_set_sensitive (vplist->goto_items[current], FALSE);
+        gtk_widget_set_sensitive (vplist->goto_items[current - 1], FALSE);
         vplist->old_vpid = current;
     }
 
