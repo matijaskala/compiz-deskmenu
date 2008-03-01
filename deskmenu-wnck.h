@@ -25,7 +25,7 @@ typedef struct DeskmenuVplist
     GtkWidget *go_right;
     GtkWidget *go_up;
     GtkWidget *go_down;
-    GtkWidget **goto_items;
+    GPtrArray *goto_items;
     gboolean wrap;
     /* store some calculations */
     guint hsize; /* 1-indexed horizontal viewport count */

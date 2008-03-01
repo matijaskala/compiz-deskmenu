@@ -492,50 +492,51 @@ deskmenu_vplist_update (WnckScreen *screen, DeskmenuVplist *vplist)
     gtk_widget_set_no_show_all (vplist->go_down,
         !deskmenu_vplist_can_move (vplist, WNCK_MOTION_DOWN));
 
-    if (new_count != vplist->old_count)
+    GtkWidget *item;
+    guint i;
+
+    if (new_count > vplist->old_count)
     {
-        GtkWidget **items = NULL, *item;
-        guint i;
-        items = vplist->goto_items;
-        for (i = 0; i < vplist->old_count; i++)
-        {
-            gtk_widget_destroy (*items);
-            items++;
-        }
-
-        g_slice_free1 (sizeof (GtkWidget *) * vplist->old_count,
-            vplist->goto_items);
-
-        vplist->goto_items = NULL;
-
         gchar *text;
-        vplist->goto_items = g_slice_alloc (sizeof (GtkWidget *) * new_count);
 
-        for (i = 0; i < new_count; i++)
+        for (i = vplist->old_count; i < new_count; i++)
         {
-            text = g_strdup_printf ("Viewport _%i", i+1);
+            text = g_strdup_printf ("Viewport _%i", i + 1);
             item = gtk_menu_item_new_with_mnemonic (text);
             g_object_set_data (G_OBJECT (item), "viewport",
-                GUINT_TO_POINTER (i+1));
+                GUINT_TO_POINTER (i + 1));
             g_signal_connect (G_OBJECT (item), "activate",
                 G_CALLBACK (deskmenu_vplist_goto), vplist);
             gtk_menu_shell_append (GTK_MENU_SHELL (vplist->menu), item);
-            vplist->goto_items[i] = item;
+            g_ptr_array_add (vplist->goto_items, item);
             g_free (text);
         }
 
-        if ((vplist->old_vpid <= new_count) && vplist->old_vpid)
-            gtk_widget_set_sensitive (vplist->goto_items[vplist->old_vpid - 1],
-                FALSE);
+        vplist->old_count = new_count;
+    }
+    else if (new_count < vplist->old_count)
+    {
+        for (i = new_count; i < vplist->old_count; i++)
+        {
+            item = g_ptr_array_index (vplist->goto_items, i);
+            gtk_widget_destroy (item);
+        }
+        g_ptr_array_remove_range (vplist->goto_items, new_count, 
+            vplist->old_count - new_count);
+
         vplist->old_count = new_count;
     }
 
     if (current != vplist->old_vpid)
     {
-        if (vplist->old_vpid <= new_count && vplist->old_vpid)
-            gtk_widget_set_sensitive (vplist->goto_items[vplist->old_vpid - 1],
-                TRUE);
-        gtk_widget_set_sensitive (vplist->goto_items[current - 1], FALSE);
+        if (vplist->old_vpid && vplist->old_vpid <= new_count)
+        {
+            item = g_ptr_array_index (vplist->goto_items, vplist->old_vpid - 1);
+            gtk_widget_set_sensitive (item, TRUE);
+        }
+        item = g_ptr_array_index (vplist->goto_items, current - 1);
+        gtk_widget_set_sensitive (item, FALSE);
+
         vplist->old_vpid = current;
     }
 
@@ -567,6 +568,8 @@ deskmenu_vplist_new (void)
 
     gtk_menu_shell_append (GTK_MENU_SHELL (vplist->menu), 
         gtk_separator_menu_item_new ());
+
+    vplist->goto_items = g_ptr_array_new ();
 
     g_signal_connect (G_OBJECT (vplist->screen), "viewports-changed",
         G_CALLBACK (deskmenu_vplist_update), vplist);
