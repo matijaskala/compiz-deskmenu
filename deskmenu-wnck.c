@@ -292,28 +292,28 @@ deskmenu_vplist_goto (GtkWidget      *widget,
     guint viewport;
     viewport = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (widget), 
         "viewport"));
-    guint x, y, i;
+    guint column, row, i;
 
-    x = viewport % vplist->hsize;
-    if (!x)
-        x = vplist->hsize - 1; /* needs to be zero-indexed */
+    column = viewport % vplist->hsize;
+    if (!column)
+        column = vplist->hsize - 1; /* needs to be zero-indexed */
     else
-        x--;
+        column--;
 
-    y = 0;
+    row = 0;
     if (viewport > vplist->hsize)
     {
         i = 0;
         while (i < (viewport - vplist->hsize))
         {
             i += vplist->hsize;
-            y++;
+            row++;
         }
     }
 
     wnck_screen_move_viewport (vplist->screen,
-        x * vplist->screen_width,
-        y * vplist->screen_height);
+        column * vplist->screen_width,
+        row * vplist->screen_height);
 }
 
 static void
@@ -327,59 +327,35 @@ deskmenu_vplist_go_direction (GtkWidget      *widget,
 
     guint x = vplist->x, y = vplist->y;
 
-    if (!vplist->wrap)
+    switch (direction)
     {
-        switch (direction)
-        {
-            case WNCK_MOTION_LEFT:
+        case WNCK_MOTION_LEFT:
+            if (vplist->screen_width - x > 0)
+                x = vplist->xmax;
+            else
                 x -= vplist->screen_width;
-                break;
-            case WNCK_MOTION_RIGHT:
+            break;
+        case WNCK_MOTION_RIGHT:
+            if (x + vplist->screen_width > vplist->xmax)
+                x = 0;
+            else
                 x += vplist->screen_width;
-                break;
-            case WNCK_MOTION_UP:
+            break;
+        case WNCK_MOTION_UP:
+            if (vplist->screen_height - y > 0)
+                y = vplist->ymax;
+            else
                 y -= vplist->screen_height;
-                break;
-            case WNCK_MOTION_DOWN:
+            break;
+        case WNCK_MOTION_DOWN:
+            if (y + vplist->screen_height > vplist->ymax)
+                y = 0;
+            else
                 y += vplist->screen_height;
-                break;
-            default:
-                g_assert_not_reached ();
-                break;
-        }
-    }
-    else
-    {
-        switch (direction)
-        {
-            case WNCK_MOTION_LEFT:
-                if (vplist->screen_width - x > 0)
-                    x = vplist->xmax;
-                else
-                    x -= vplist->screen_width;
-                break;
-            case WNCK_MOTION_RIGHT:
-                if (x + vplist->screen_width > vplist->xmax)
-                    x = 0;
-                else
-                    x += vplist->screen_width;
-                break;
-            case WNCK_MOTION_UP:
-                if (vplist->screen_height - y > 0)
-                    y = vplist->ymax;
-                else
-                    y -= vplist->screen_height;
-                break;
-            case WNCK_MOTION_DOWN:
-                if (y + vplist->screen_height > vplist->ymax)
-                    y = 0;
-                else
-                    y += vplist->screen_height;
-                break;
-            default:
-                g_assert_not_reached ();
-                break;
-        }
+            break;
+        default:
+            g_assert_not_reached ();
+            break;
     }
 
     wnck_screen_move_viewport (vplist->screen, x, y);
@@ -444,10 +420,11 @@ deskmenu_vplist_make_go_item (DeskmenuVplist      *vplist,
 guint
 deskmenu_vplist_get_vpid (DeskmenuVplist *vplist)
 {
-    guint vpx = vplist->x / vplist->screen_width;
-    guint vpy = vplist->y / vplist->screen_height;
+    guint column, row;
+    column = vplist->x / vplist->screen_width;
+    row = vplist->y / vplist->screen_height;
     
-    return (vpy * vplist->hsize + vpx + 1);
+    return (row * vplist->hsize + column + 1);
 }
 
 static void
