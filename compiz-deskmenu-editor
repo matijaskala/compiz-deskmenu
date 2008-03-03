@@ -100,11 +100,11 @@ class DeskmenuEditor(gtk.Window):
 
     def on_new_clicked(self, widget):
 
-        NewItemDialog(*self.selection.get_selection())
+        NewItemDialog(*self.selection.get_selected())
 
     def on_edit_clicked(self, widget):
 
-        EditItemDialog(*self.selection.get_selection())
+        EditItemDialog(*self.selection.get_selected())
         
     def on_delete_clicked(self, widget):
 
