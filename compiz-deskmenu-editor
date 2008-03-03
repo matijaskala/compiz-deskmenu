@@ -52,6 +52,8 @@ class DeskmenuEditor(gtk.Window):
         treeview.connect('drag-data-received', self.on_drag_data_received)
 
         treeview.connect('row-activated', self.on_row_activated)
+
+        treeview.connect('button-press-event', self.on_treeview_button_press_event)
         treeview.expand_all()
 
         self.selection = treeview.get_selection()
@@ -74,6 +76,15 @@ class DeskmenuEditor(gtk.Window):
         buttonbox.pack_end(close)
 
         self.add(vbox)
+
+        self.popup = gtk.Menu()
+        self.edit_menu = gtk.ImageMenuItem(stock_id=gtk.STOCK_EDIT)
+        self.edit_menu.connect('activate', self.on_edit_clicked)
+        self.popup.append(self.edit_menu)
+        self.delete_menu = gtk.ImageMenuItem(stock_id=gtk.STOCK_DELETE)
+        self.delete_menu.connect('activate', self.on_delete_clicked)
+        self.popup.append(self.delete_menu)
+        self.popup.show_all()
 
         self.show_all()
 
@@ -219,7 +230,6 @@ class DeskmenuEditor(gtk.Window):
 
         return
 
-
     def on_selection_changed(self, selection):
 
         model, row = selection.get_selected()
@@ -227,13 +237,25 @@ class DeskmenuEditor(gtk.Window):
         sensitive = row and model.get_value(row, 0).editable
 
         self.edit.props.sensitive = sensitive
+        self.edit_menu.props.sensitive = sensitive
         self.delete.props.sensitive = row
+        self.delete_menu.props.sensitive = row
 
     def on_row_activated(self, treeview, path, view_column):
 
         model = treeview.get_model()
         EditItemDialog(model, model.get_iter(path))
         
+    def on_treeview_button_press_event(self, treeview, event):
+        if event.button == 3:
+            pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
+            if pthinfo is not None:
+                path, col, cellx, celly = pthinfo
+                treeview.grab_focus()
+                treeview.set_cursor(path, col, 0)
+                self.popup.popup(None, None, None, event.button, event.time)
+            return 1
+
 
 class NewItemDialog(gtk.Dialog):
 
