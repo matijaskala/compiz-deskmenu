@@ -423,8 +423,7 @@ class Launcher(Item):
             name = self.name.text
             if self.name.attrib.get('mode') == 'exec':
                 name = 'exec: %s' %name
-            else:
-                name = name.replace('_', '')
+
             return name
         else:
             return None
@@ -627,8 +626,7 @@ class Menu(object):
         return elements[child.tag](child)
 
     def get_name(self):
-        name = self.node.attrib.get('name', '')
-        return name.replace('_', '')
+        return self.node.attrib.get('name', '')
 
     def get_type(self):
         return 'Menu'
