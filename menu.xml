@@ -24,5 +24,10 @@
   <separator/>
   <item type="windowlist"/>
   <item type="viewportlist"/>
+  <item type="launcher">
+    <icon>gtk-edit</icon>
+    <command>compiz-deskmenu-editor</command>
+    <name>E_dit</name>
+  </item>
   <item type="reload"/>
 </menu>

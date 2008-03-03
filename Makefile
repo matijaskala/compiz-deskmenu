@@ -23,6 +23,7 @@ install: all
 	mkdir -p $(DESTDIR)$(PREFIX)/bin/
 	install compiz-deskmenu $(DESTDIR)$(PREFIX)/bin/
 	install compiz-deskmenu-menu $(DESTDIR)$(PREFIX)/bin/
+	install compiz-deskmenu-editor $(DESTDIR)$(PREFIX)/bin/
 	mkdir -p $(DESTDIR)/etc/xdg/compiz/deskmenu/
 	install menu.xml $(DESTDIR)/etc/xdg/compiz/deskmenu/
 	mkdir -p $(DESTDIR)$(PREFIX)/share/dbus-1/services/
