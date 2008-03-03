@@ -121,6 +121,8 @@ class DeskmenuEditor(gtk.Window):
             parent.remove(current)
             model.remove(row)
 
+        write_menu()
+
     def on_close_clicked(self, widget):
 
         write_menu()
@@ -173,6 +175,7 @@ class DeskmenuEditor(gtk.Window):
                     citer = model.iter_next(citer)
 
             context.finish(True, True, etime)
+        write_menu()
 
         return
 
@@ -251,6 +254,7 @@ class NewItemDialog(gtk.Dialog):
                 parentelement.node.append(element.node)
 
         self.destroy()
+        write_menu()
 
     def make_treeview(self):
         model = gtk.ListStore(str)  
@@ -291,6 +295,7 @@ class EditItemDialog(gtk.Dialog):
         self.show_all()
         self.run()
         self.destroy()
+        write_menu()
 
 
 
