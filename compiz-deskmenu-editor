@@ -128,6 +128,15 @@ class DeskmenuEditor(gtk.Window):
         parent = None
         if row:
             current = model[row][0].node
+
+            if current.tag == 'menu' and len(current):
+                warning = gtk.MessageDialog(self, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, gtk.BUTTONS_NONE, 'Delete menu element with %s children?' %len(current))
+                warning.add_buttons(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_DELETE, gtk.RESPONSE_ACCEPT)
+                if warning.run() != gtk.RESPONSE_ACCEPT:
+                    warning.destroy()
+                    return
+                warning.destroy()
+
             parent = model[row].parent
             if parent is not None:
                 parent = parent[0].node
@@ -328,7 +337,12 @@ class NewItemDialog(gtk.Dialog):
         treeview.set_headers_visible(False)
         treeview.append_column(column)
 
+        treeview.connect('row-activated', self.on_row_activated)
         return treeview
+
+    def on_row_activated(self, treeview, path, view_column):
+        self.response(gtk.RESPONSE_ACCEPT)
+
 
 class EditItemDialog(gtk.Dialog):
 
