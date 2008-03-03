@@ -3,6 +3,7 @@
 import gtk, os
 from lxml import etree
 from xdg import BaseDirectory
+import ConfigParser
 
 class DeskmenuEditor(gtk.Window):
 
@@ -40,9 +41,12 @@ class DeskmenuEditor(gtk.Window):
         treeview.append_column(name)
         scrolled.add(treeview)
         vbox.pack_start(scrolled, True, True)
-
-        treeview.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('element', gtk.TARGET_SAME_WIDGET, 0)], gtk.gdk.ACTION_MOVE)
-        treeview.enable_model_drag_dest([('element', gtk.TARGET_SAME_WIDGET, 0)], gtk.gdk.ACTION_MOVE)
+        targets = [
+            ('deskmenu-element', gtk.TARGET_SAME_WIDGET, 0),
+            ('text/uri-list', 0, 1),
+        ]
+        treeview.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, targets, gtk.gdk.ACTION_DEFAULT|gtk.gdk.ACTION_MOVE)
+        treeview.enable_model_drag_dest(targets, gtk.gdk.ACTION_MOVE)
 
         treeview.connect('drag-data-get', self.on_drag_data_get)
         treeview.connect('drag-data-received', self.on_drag_data_received)
@@ -139,42 +143,78 @@ class DeskmenuEditor(gtk.Window):
                                 info, etime):
         model = treeview.get_model()
         data = selection.data
+
         drop_info = treeview.get_dest_row_at_pos(x, y)
+        if selection.type == 'deskmenu-element':
+            source = model[data][0]
+            if drop_info:
+                path, position = drop_info
+                siter = model.get_iter(data)
+                diter = model.get_iter(path)
 
-        source = model[data][0]
+                if model.get_path(model.get_iter_from_string(data)) == path:
+                    return
 
-        if drop_info:
-            path, position = drop_info
-            siter = model.get_iter(data)
-            diter = model.get_iter(path)
+                dest = model[path][0]
+                if context.action == gtk.gdk.ACTION_MOVE:
+                    source.node.getparent().remove(source.node)
 
-            if model.get_path(model.get_iter_from_string(data)) == path:
-                return
-
-            dest = model[path][0]
-            source.node.getparent().remove(source.node)
-
-            if dest.node.tag == 'menu' and position in (gtk.TREE_VIEW_DROP_INTO_OR_BEFORE,
-                gtk.TREE_VIEW_DROP_INTO_OR_AFTER):
-                dest.node.append(source.node)
-                fiter = model.append(diter, row=(source,))
-            else:
-                i = dest.node.getparent().index(dest.node)
-                if position in (gtk.TREE_VIEW_DROP_INTO_OR_BEFORE, 
-                    gtk.TREE_VIEW_DROP_BEFORE):
-                    dest.node.getparent().insert(i, source.node)
-                    fiter = model.insert_before(None, diter, row=(source,))
+                if dest.node.tag == 'menu' and position in (gtk.TREE_VIEW_DROP_INTO_OR_BEFORE,
+                    gtk.TREE_VIEW_DROP_INTO_OR_AFTER):
+                    dest.node.append(source.node)
+                    fiter = model.append(diter, row=(source,))
                 else:
-                    dest.node.getparent().insert(i+1, source.node)
-                    fiter = model.insert_after(None, diter, row=(source,))
+                    i = dest.node.getparent().index(dest.node)
+                    if position in (gtk.TREE_VIEW_DROP_INTO_OR_BEFORE, 
+                        gtk.TREE_VIEW_DROP_BEFORE):
+                        dest.node.getparent().insert(i, source.node)
+                        fiter = model.insert_before(None, diter, row=(source,))
+                    else:
+                        dest.node.getparent().insert(i+1, source.node)
+                        fiter = model.insert_after(None, diter, row=(source,))
 
-            if model.iter_has_child(siter):
-                citer = model.iter_children(siter)
-                while citer is not None:
-                    model.append(fiter, row=(model[citer][0],))
-                    citer = model.iter_next(citer)
+                if model.iter_has_child(siter):
+                    citer = model.iter_children(siter)
+                    while citer is not None:
+                        model.append(fiter, row=(model[citer][0],))
+                        citer = model.iter_next(citer)
+                if context.action == gtk.gdk.ACTION_MOVE:
+                    context.finish(True, True, etime)
 
-            context.finish(True, True, etime)
+        elif selection.type == 'text/uri-list':
+            if drop_info:
+                path, position = drop_info
+                uri = selection.data.replace('file:///', '/').strip()
+                entry = ConfigParser.ConfigParser()
+                entry.read(uri)
+                launcher = Launcher()
+                launcher.name = etree.SubElement(launcher.node, 'name')
+                launcher.icon = etree.SubElement(launcher.node, 'icon')
+                launcher.command = etree.SubElement(launcher.node, 'command')
+                try:
+                    launcher.name.text = entry.get('Desktop Entry', 'Name')
+                    launcher.icon.text = entry.get('Desktop Entry', 'Icon').split('.')[0]
+                    launcher.command.text = entry.get('Desktop Entry', 'Exec').split('%')[0]
+                except ConfigParser.Error:
+                    return
+                dest = model[path][0]
+                diter = model.get_iter(path)
+                if dest.node.tag == 'menu' and position in (gtk.TREE_VIEW_DROP_INTO_OR_BEFORE,
+                    gtk.TREE_VIEW_DROP_INTO_OR_AFTER):
+                    dest.node.append(launcher.node)
+                    fiter = model.append(diter, row=(launcher,))
+                else:
+                    i = dest.node.getparent().index(dest.node)
+                    if position in (gtk.TREE_VIEW_DROP_INTO_OR_BEFORE, 
+                        gtk.TREE_VIEW_DROP_BEFORE):
+                        dest.node.getparent().insert(i, launcher.node)
+                        fiter = model.insert_before(None, diter, row=(launcher,))
+                    else:
+                        dest.node.getparent().insert(i+1, launcher.node)
+                        fiter = model.insert_after(None, diter, row=(launcher,))
+                if context.action == gtk.gdk.ACTION_MOVE:
+                    context.finish(True, True, etime)
+
         write_menu()
 
         return
