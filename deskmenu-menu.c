@@ -197,7 +197,7 @@ start_element (GMarkupParseContext *context,
     const gchar **ncursor = attr_names, **vcursor = attr_values;
     GtkWidget *item, *menu;
 
-    element_type = (DeskmenuElementType) GPOINTER_TO_INT (g_hash_table_lookup 
+    element_type = GPOINTER_TO_INT (g_hash_table_lookup 
         (deskmenu->element_hash, element_name));
 
     if ((deskmenu->menu && !deskmenu->current_menu)
@@ -283,9 +283,8 @@ start_element (GMarkupParseContext *context,
                 while (*ncursor)
                 {
                     if (strcmp (*ncursor, "type") == 0)
-                        deskmenu->current_item->type = (DeskmenuItemType) 
-                            GPOINTER_TO_INT (g_hash_table_lookup 
-                                (deskmenu->item_hash, *vcursor));
+                        deskmenu->current_item->type = GPOINTER_TO_INT
+                        (g_hash_table_lookup (deskmenu->item_hash, *vcursor));
                     else
                         g_set_error (error, G_MARKUP_ERROR,
                             G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE, 
@@ -377,7 +376,7 @@ end_element (GMarkupParseContext *context,
     DeskmenuElementType element_type;
     Deskmenu *deskmenu = DESKMENU (user_data);
     GtkWidget *parent, *item;
-    element_type = (DeskmenuElementType) GPOINTER_TO_INT (g_hash_table_lookup 
+    element_type = GPOINTER_TO_INT (g_hash_table_lookup 
         (deskmenu->element_hash, element_name));
 
     switch (element_type)
