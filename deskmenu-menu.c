@@ -578,7 +578,7 @@ static void
 die (const char *prefix,
      GError     *error)
 {
-    g_error ("%s: %s", prefix, error->message);
+    g_printerr ("%s: %s", prefix, error->message);
     g_error_free (error);
     exit (1);
 }
