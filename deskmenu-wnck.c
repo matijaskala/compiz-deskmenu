@@ -81,6 +81,30 @@ wnck_selector_get_width (GtkWidget  *widget,
 /* end borrowing */
 
 static void
+dmwin_set_weight (DeskmenuWindow *dmwin, PangoWeight weight)
+{
+    PangoFontDescription *font_desc;
+    font_desc = pango_font_description_new ();
+    pango_font_description_set_weight (font_desc, weight);
+    gtk_widget_modify_font (dmwin->label, font_desc);
+    pango_font_description_free (font_desc);
+}
+
+static void
+dmwin_set_decoration (DeskmenuWindow *dmwin, gchar *ante, gchar *post)
+{
+    gchar *name;
+    name = g_strconcat (ante, wnck_window_get_name (dmwin->window), post, NULL);
+
+    gtk_label_set_text (GTK_LABEL (dmwin->label), name);
+
+    gtk_widget_set_size_request (dmwin->label,
+        wnck_selector_get_width (dmwin->windowlist->menu, name), -1);
+
+    g_free (name);
+}
+
+static void
 activate_window (GtkWidget  *widget,
                  WnckWindow *window)
 {
@@ -106,39 +130,25 @@ dmwin_for_window (DeskmenuWindow *dmwin,
         return -1; /* keep searching */
 }
 
-
 static void
-window_update (WnckWindow *window, 
-               DeskmenuWindow* dmwin)
+window_name_changed (WnckWindow *window, 
+                     DeskmenuWindow *dmwin)
 {
-    gchar *name, *ante, *post;
-
-    if (wnck_window_is_shaded (window))
+    if (wnck_window_is_minimized (window))
     {
-        ante = "=";
-        post = "=";
-
-    }
-    else if (wnck_window_is_minimized (window))
-    {
-        ante = "[";
-        post = "]";
+        if (wnck_window_is_shaded (window))
+            dmwin_set_decoration (dmwin, "=", "=");
+        else
+            dmwin_set_decoration (dmwin, "[", "]");
     }
     else
-    {
-        ante = "";
-        post = "";
-    }
+        dmwin_set_decoration (dmwin, "", "");
+}
 
-    name = g_strconcat (ante, wnck_window_get_name (window), post, NULL);
-
-    gtk_label_set_text (GTK_LABEL (dmwin->label), name);
-
-    gtk_widget_set_size_request (dmwin->label,
-        wnck_selector_get_width ((dmwin->windowlist->menu), name), -1);
-
-    g_free (name);
-
+static void
+window_icon_changed (WnckWindow *window, 
+                     DeskmenuWindow* dmwin)
+{
     GdkPixbuf *pixbuf;
     gboolean free_pixbuf;
 
@@ -157,10 +167,37 @@ window_update (WnckWindow *window,
 }
 
 static void
-window_state_changed (WnckWindow *window, WnckWindowState changed_state,
-                      WnckWindowState new_state, DeskmenuWindow *dmwin)
+window_state_changed (WnckWindow      *window,
+                      WnckWindowState  changed_state,
+                      WnckWindowState  new_state,
+                      DeskmenuWindow  *dmwin)
 {
-    window_update (window, dmwin);
+    if (changed_state
+        & (WNCK_WINDOW_STATE_DEMANDS_ATTENTION | WNCK_WINDOW_STATE_URGENT))
+    {
+        if (wnck_window_or_transient_needs_attention (window))
+            dmwin_set_weight (dmwin, PANGO_WEIGHT_BOLD);
+        else
+            dmwin_set_weight (dmwin, PANGO_WEIGHT_NORMAL);
+    }
+
+    if (changed_state
+        & (WNCK_WINDOW_STATE_MINIMIZED | WNCK_WINDOW_STATE_SHADED))
+        window_name_changed (window, dmwin);
+
+    if (changed_state & WNCK_WINDOW_STATE_SKIP_TASKLIST)
+    {
+        if (wnck_window_is_skip_tasklist (window))
+        {
+            gtk_widget_hide_all (dmwin->item);
+            gtk_widget_set_no_show_all (dmwin->item, TRUE);
+        }
+        else
+        {
+            gtk_widget_set_no_show_all (dmwin->item, FALSE);
+            gtk_widget_show_all (dmwin->item);
+        }
+    }
 }
 
 static void
@@ -178,7 +215,6 @@ windowlist_check_empty (DeskmenuWindowlist *windowlist)
     {
         gtk_widget_destroy (windowlist->empty_item);
         windowlist->empty_item = NULL;
-        
     }
 }
 
@@ -211,16 +247,25 @@ deskmenu_windowlist_window_new (WnckWindow *window,
     gtk_menu_shell_append (GTK_MENU_SHELL (windowlist->menu), 
         dmwin->item);
 
-    window_update (window, dmwin);
+    window_name_changed (window, dmwin);
+    window_icon_changed (window, dmwin);
+
+    if (wnck_window_or_transient_needs_attention (window))
+        dmwin_set_weight (dmwin, PANGO_WEIGHT_BOLD);
+    else
+        dmwin_set_weight (dmwin, PANGO_WEIGHT_NORMAL);
 
     g_signal_connect (G_OBJECT (window), "name-changed", 
-        G_CALLBACK (window_update), dmwin);
+        G_CALLBACK (window_name_changed), dmwin);
 
     g_signal_connect (G_OBJECT (window), "icon-changed", 
-        G_CALLBACK (window_update), dmwin);
+        G_CALLBACK (window_icon_changed), dmwin);
 
     g_signal_connect (G_OBJECT (window), "state-changed", 
         G_CALLBACK (window_state_changed), dmwin);
+
+    gtk_widget_set_no_show_all (dmwin->item,
+        wnck_window_is_skip_tasklist (window));
 
     gtk_widget_show_all (dmwin->item);
 
@@ -231,9 +276,6 @@ static void
 screen_window_opened (WnckScreen *screen, WnckWindow *window,
                       DeskmenuWindowlist *windowlist)
 {
-    if (wnck_window_is_skip_tasklist (window))
-        return;
-
     DeskmenuWindow *dmwin;
     dmwin = deskmenu_windowlist_window_new (window, windowlist);
     windowlist->windows = g_list_prepend (windowlist->windows, dmwin);
@@ -320,7 +362,6 @@ static void
 deskmenu_vplist_go_direction (GtkWidget      *widget,
                               DeskmenuVplist *vplist)
 {
-
     WnckMotionDirection direction;
     direction = (WnckMotionDirection) GPOINTER_TO_UINT (g_object_get_data 
         (G_OBJECT (widget), "direction"));
@@ -357,7 +398,6 @@ deskmenu_vplist_go_direction (GtkWidget      *widget,
             g_assert_not_reached ();
             break;
     }
-
     wnck_screen_move_viewport (vplist->screen, x, y);
 }
 
