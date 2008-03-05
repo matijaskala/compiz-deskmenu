@@ -86,6 +86,8 @@ class DeskmenuEditor(gtk.Window):
         self.popup.append(self.delete_menu)
         self.popup.show_all()
 
+        self.connect('destroy', self.on_close_clicked)
+
         self.show_all()
 
     def add_menu(self, m, parent=None):
