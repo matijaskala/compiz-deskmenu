@@ -5,6 +5,11 @@ from lxml import etree
 from xdg import BaseDirectory
 import ConfigParser
 
+try:
+    import dbus
+except ImportError:
+    dbus = None
+
 class DeskmenuEditor(gtk.Window):
 
     def __init__(self):
@@ -683,6 +688,13 @@ def write_menu():
     indent(menu.node)
     menufile.write(open(os.path.join(configdir, 'menu.xml'), 'w'))
 
+    if bus is not None:
+        try:
+            bus.get_object('org.compiz_fusion.deskmenu',
+                '/org/compiz_fusion/deskmenu/menu').reload()
+        except dbus.DBusException:
+            return
+
 elements = {'menu': Menu, 'item': make_item, 'separator': Separator}
 
 elementsbyname = {
@@ -696,6 +708,13 @@ elementsbyname = {
 
 
 if __name__ == '__main__':
+
+    if dbus:
+        try:
+            bus = dbus.SessionBus()
+        except dbus.DBusException:
+            bus = None
+
     filename = BaseDirectory.load_first_config('compiz/deskmenu/menu.xml')
     menufile = etree.parse(filename)
     root = menufile.getroot()

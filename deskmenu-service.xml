@@ -5,5 +5,7 @@
     <annotation name="org.freedesktop.DBus.GLib.CSymbol" value="deskmenu"/>
     <method name="show">
     </method>
+    <method name="reload">
+    </method>
   </interface>
 </node>

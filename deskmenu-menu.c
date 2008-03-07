@@ -555,16 +555,23 @@ gboolean
 deskmenu_show (Deskmenu *deskmenu,
                GError  **error)
 {
-    guint32 timestamp;
-    timestamp = gtk_get_current_event_time ();
-
     g_hook_list_invoke (deskmenu->show_hooks, FALSE);
 
     gtk_menu_popup (GTK_MENU (deskmenu->menu), 
                     NULL, NULL, NULL, NULL, 
-                    0, timestamp);
+                    0, 0);
     return TRUE;
 }
+
+/* The reload method */
+gboolean
+deskmenu_reload (Deskmenu *deskmenu,
+               GError  **error)
+{
+    gtk_main_quit ();
+    return TRUE;
+}
+
 
 /* Convenience function to print an error and exit */
 static void

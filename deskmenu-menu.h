@@ -93,5 +93,7 @@ GQuark deskmenu_error_quark (void);
 #define DESKMENU_ERROR deskmenu_error_quark ()
 
 
-gboolean deskmenu_show(Deskmenu *deskmenu, GError **error);
+gboolean deskmenu_show (Deskmenu *deskmenu, GError **error);
+gboolean deskmenu_reload (Deskmenu *deskmenu, GError **error);
+
 
