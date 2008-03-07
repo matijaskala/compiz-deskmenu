@@ -105,15 +105,10 @@ static void
 activate_window (GtkWidget  *widget,
                  WnckWindow *window)
 {
-    WnckWorkspace *workspace;
     guint32 timestamp;
 
     timestamp = gtk_get_current_event_time ();
 
-    workspace = wnck_window_get_workspace (window);
-
-    if (workspace)
-        wnck_workspace_activate (workspace, timestamp);
     wnck_window_activate (window, timestamp);
 }
 
