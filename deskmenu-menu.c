@@ -23,8 +23,6 @@
 #define HAVE_WNCK 1
 
 #if HAVE_WNCK
-#define WNCK_I_KNOW_THIS_IS_UNSTABLE 1
-#include <libwnck/libwnck.h>
 #include "deskmenu-wnck.h"
 #endif
 
@@ -611,6 +609,10 @@ main (int    argc,
     connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
     if (connection == NULL)
         die ("Failed to open connection to bus", error);
+
+#if HAVE_WNCK
+    wnck_set_client_type (WNCK_CLIENT_TYPE_PAGER);
+#endif
 
     gtk_init (&argc, &argv);
 

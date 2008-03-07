@@ -1,4 +1,7 @@
 
+#define WNCK_I_KNOW_THIS_IS_UNSTABLE 1
+#include <libwnck/libwnck.h>
+
 typedef struct DeskmenuWindowlist
 {
     WnckScreen *screen;

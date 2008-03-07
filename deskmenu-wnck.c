@@ -2,9 +2,6 @@
 #include <string.h>
 #include <gtk/gtk.h>
 
-#define WNCK_I_KNOW_THIS_IS_UNSTABLE 1
-#include <libwnck/libwnck.h>
-
 #include "deskmenu-wnck.h"
 
 /* borrowed from libwnck selector.c */
@@ -113,7 +110,7 @@ activate_window (GtkWidget  *widget,
 
     timestamp = gtk_get_current_event_time ();
 
-    workspace = (WnckWorkspace *) wnck_window_get_workspace (window);
+    workspace = wnck_window_get_workspace (window);
 
     if (workspace)
         wnck_workspace_activate (workspace, timestamp);
