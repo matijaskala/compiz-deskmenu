@@ -334,6 +334,9 @@ class NewItemDialog(gtk.Dialog):
         self.destroy()
         write_menu()
 
+        if element.editable:
+            EditItemDialog(element=element)
+
     def make_treeview(self):
         model = gtk.ListStore(str)  
         for el in self.elementlist:
@@ -353,19 +356,19 @@ class NewItemDialog(gtk.Dialog):
 
 class EditItemDialog(gtk.Dialog):
 
-    def __init__(self, model, row):
+    def __init__(self, model=None, row=None, element=None):
         gtk.Dialog.__init__(self, 'Edit Item', None, 0, None)
 
         self.set_size_request(300, -1)
-
-        if not row:
-            return
 
         self.props.border_width = 6
         self.vbox.props.spacing = 6
         self.set_has_separator(False)
 
-        element = model.get_value(row, 0)
+        if element is None:
+            if not row:
+                return
+            element = model.get_value(row, 0)
 
         if not element.editable:
             return
