@@ -24,7 +24,7 @@ class DeskmenuEditor(gtk.Window):
         vbox = gtk.VBox(spacing=12)
 
         scrolled = gtk.ScrolledWindow()
-        scrolled.props.hscrollbar_policy = gtk.POLICY_AUTOMATIC
+        scrolled.props.hscrollbar_policy = gtk.POLICY_NEVER
         scrolled.props.vscrollbar_policy = gtk.POLICY_AUTOMATIC
         treeview = gtk.TreeView(self.model)
         treeview.set_reorderable(True)
@@ -290,7 +290,7 @@ class NewItemDialog(gtk.Dialog):
 
         scroll = gtk.ScrolledWindow()
         scroll.add(self.treeview)
-        scroll.props.hscrollbar_policy = gtk.POLICY_AUTOMATIC
+        scroll.props.hscrollbar_policy = gtk.POLICY_NEVER
         scroll.props.vscrollbar_policy = gtk.POLICY_AUTOMATIC
         self.vbox.pack_start(scroll, True, True)
 
@@ -300,6 +300,9 @@ class NewItemDialog(gtk.Dialog):
         self.action_area.props.border_width = 0
 
         self.show_all()
+
+        element = None
+
         if self.run() == gtk.RESPONSE_ACCEPT:
             m, r = self.treeview.get_selection().get_selected()
             if r:
@@ -334,7 +337,7 @@ class NewItemDialog(gtk.Dialog):
         self.destroy()
         write_menu()
 
-        if element.editable:
+        if element and element.editable:
             EditItemDialog(element=element)
 
     def make_treeview(self):
