@@ -602,10 +602,10 @@ class Separator(object):
             self.node = etree.Element('separator')
 
     def get_name(self):
-        return None
+        return '---'
 
     def get_type(self):
-        return '---'
+        return 'Separator'
 
     def get_icon(self):
         return None
