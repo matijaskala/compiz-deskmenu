@@ -90,15 +90,43 @@ dmwin_set_weight (DeskmenuWindow *dmwin, PangoWeight weight)
 static void
 dmwin_set_decoration (DeskmenuWindow *dmwin, gchar *ante, gchar *post)
 {
-    gchar *name;
-    name = g_strconcat (ante, wnck_window_get_name (dmwin->window), post, NULL);
+    GString *name;
+    gchar *namecpy, *mnemonic, *decorated_name, *unescaped;
+    guint i, n;
 
-    gtk_label_set_text (GTK_LABEL (dmwin->label), name);
+    name = g_string_new (wnck_window_get_name (dmwin->window));
+    
+    namecpy = g_strdup (name->str);
+
+    n = 0;
+    for (i = 0; i < name->len; i++)
+    {
+        if (namecpy[i] == '_')
+        {
+            g_string_insert_c (name, i+n, '_');
+            n++;
+        }
+    }
+    g_free (namecpy);
+
+    if (name->len)
+        mnemonic = "_";
+    else
+        mnemonic = "";
+
+    decorated_name = g_strconcat (ante, mnemonic, name->str, post, NULL);
+
+    unescaped = g_strconcat (ante, wnck_window_get_name (dmwin->window),
+        post, NULL);
+
+    gtk_label_set_text_with_mnemonic (GTK_LABEL (dmwin->label), decorated_name);
 
     gtk_widget_set_size_request (dmwin->label,
-        wnck_selector_get_width (dmwin->windowlist->menu, name), -1);
+        wnck_selector_get_width (dmwin->windowlist->menu, unescaped), -1);
 
-    g_free (name);
+    g_string_free (name, TRUE);
+    g_free (decorated_name);
+    g_free (unescaped);
 }
 
 static void
