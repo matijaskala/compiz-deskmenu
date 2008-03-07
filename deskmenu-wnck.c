@@ -368,7 +368,7 @@ deskmenu_vplist_go_direction (GtkWidget      *widget,
     switch (direction)
     {
         case WNCK_MOTION_LEFT:
-            if (vplist->screen_width - x > 0)
+            if (vplist->screen_width > x)
                 x = vplist->xmax;
             else
                 x -= vplist->screen_width;
@@ -380,7 +380,7 @@ deskmenu_vplist_go_direction (GtkWidget      *widget,
                 x += vplist->screen_width;
             break;
         case WNCK_MOTION_UP:
-            if (vplist->screen_height - y > 0)
+            if (vplist->screen_height > y)
                 y = vplist->ymax;
             else
                 y -= vplist->screen_height;
