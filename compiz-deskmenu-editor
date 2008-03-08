@@ -16,6 +16,7 @@ class DeskmenuEditor(gtk.Window):
         gtk.Window.__init__(self)
         
         self.props.title = 'Compiz Deskmenu Editor'
+        self.props.icon_name = 'gtk-edit'
         self.props.border_width = 12
         self.set_size_request(400, 400)
         self.model = gtk.TreeStore(object)
