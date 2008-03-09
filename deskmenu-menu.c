@@ -495,8 +495,11 @@ deskmenu_parse_file (Deskmenu *deskmenu,
     gsize length;
     
     if (!configpath)
-        configpath = g_build_path (G_DIR_SEPARATOR_S, g_get_user_config_dir (),
-                                   "compiz", "deskmenu", "menu.xml",
+        configpath = g_build_path (G_DIR_SEPARATOR_S,
+                                   g_get_user_config_dir (),
+                                   "compiz",
+                                   "deskmenu",
+                                   "menu.xml",
                                    NULL);
 
     GMarkupParseContext *context = g_markup_parse_context_new (&parser,
@@ -511,8 +514,11 @@ deskmenu_parse_file (Deskmenu *deskmenu,
             g_free (configpath);
             g_free (path);
             path = g_strdup (*cursor);
-            configpath = g_build_path (G_DIR_SEPARATOR_S, path,
-                                       "compiz", "deskmenu", "menu.xml",
+            configpath = g_build_path (G_DIR_SEPARATOR_S,
+                                       path,
+                                       "compiz",
+                                       "deskmenu",
+                                       "menu.xml",
                                        NULL);
 
             if (g_file_get_contents (configpath, &text, &length, NULL))
@@ -531,15 +537,16 @@ deskmenu_parse_file (Deskmenu *deskmenu,
 
     if (!success)
     {
-        g_print ("Couldn't find a menu file\n");
+        g_printerr ("Couldn't find a menu file\n");
         exit (1);
     }
 
     if (!g_markup_parse_context_parse (context, text, length, &error)
         || !g_markup_parse_context_end_parse (context, &error))
     {
-        g_print ("Parse of %s failed with message: %s \n",
+        g_printerr ("Parse of %s failed with message: %s \n",
             configpath, error->message);
+        g_error_free (error);
         exit (1);
     }
 
@@ -572,17 +579,6 @@ deskmenu_reload (Deskmenu *deskmenu,
     return TRUE;
 }
 
-
-/* Convenience function to print an error and exit */
-static void
-die (const char *prefix,
-     GError     *error)
-{
-    g_printerr ("%s: %s", prefix, error->message);
-    g_error_free (error);
-    exit (1);
-}
-
 int
 main (int    argc,
       char **argv)
@@ -607,7 +603,8 @@ main (int    argc,
     g_option_context_add_group (context, gtk_get_option_group (TRUE));
     if (!g_option_context_parse (context, &argc, &argv, &error))
     {
-        g_print ("option parsing failed: %s\n", error->message);
+        g_printerr ("option parsing failed: %s", error->message);
+        g_error_free (error);
         exit (1);
     }
     g_option_context_free (context);
@@ -615,7 +612,11 @@ main (int    argc,
     /* Obtain a connection to the session bus */
     connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
     if (connection == NULL)
-        die ("Failed to open connection to bus", error);
+    {
+        g_printerr ("Failed to open connection to bus: %s", error->message);
+        g_error_free (error);
+        exit (1);
+    }
 
 #if HAVE_WNCK
     wnck_set_client_type (WNCK_CLIENT_TYPE_PAGER);
