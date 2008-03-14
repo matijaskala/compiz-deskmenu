@@ -53,10 +53,14 @@ launcher_activated (GtkWidget *widget,
                     gchar     *command)
 {
     GError *error = NULL;
+    Deskmenu *deskmenu;
+
+    deskmenu = g_object_get_data (G_OBJECT (widget), "deskmenu");
+
 	if (!gdk_spawn_on_screen (gdk_screen_get_default (),
                               g_get_home_dir (),
                               g_strsplit (command, " ", 0),
-                              NULL, G_SPAWN_SEARCH_PATH,
+                              deskmenu->envp, G_SPAWN_SEARCH_PATH,
                               NULL, NULL, NULL, &error))
     {
         GtkWidget *message = gtk_message_dialog_new (NULL, 0, GTK_MESSAGE_ERROR,
@@ -129,6 +133,7 @@ deskmenu_construct_item (Deskmenu *deskmenu)
             if (item->command)
             {
                 command = g_strstrip (item->command->str);
+                g_object_set_data (G_OBJECT (menu_item), "deskmenu", deskmenu);
                 g_signal_connect (G_OBJECT (menu_item), "activate",
                     G_CALLBACK (launcher_activated), g_strdup (command));
             }
@@ -453,6 +458,8 @@ deskmenu_init (Deskmenu *deskmenu)
     deskmenu->current_menu = NULL;
     deskmenu->current_item = NULL;
 
+    deskmenu->envp = NULL;
+
     deskmenu->item_hash = g_hash_table_new (g_str_hash, g_str_equal);
 
     g_hash_table_insert (deskmenu->item_hash, "launcher",
@@ -560,9 +567,15 @@ deskmenu_parse_file (Deskmenu *deskmenu,
 /* The show method */
 gboolean
 deskmenu_show (Deskmenu *deskmenu,
+               gchar **env,
                GError  **error)
 {
     g_hook_list_invoke (deskmenu->show_hooks, FALSE);
+
+    if (deskmenu->envp)
+        g_strfreev (deskmenu->envp);
+
+    deskmenu->envp = g_strdupv (env);
 
     gtk_menu_popup (GTK_MENU (deskmenu->menu), 
                     NULL, NULL, NULL, NULL, 

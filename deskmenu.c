@@ -20,6 +20,8 @@
 
 #include "deskmenu-common.h"
 
+extern char **environ;
+
 int main (int argc, char *argv[])
 {
     DBusGConnection *connection;
@@ -41,15 +43,14 @@ int main (int argc, char *argv[])
         return 1;
     }
 
-
     proxy = dbus_g_proxy_new_for_name (connection,
                                        DESKMENU_SERVICE_DBUS,
                                        DESKMENU_PATH_DBUS,
                                        DESKMENU_INTERFACE_DBUS);
 
-
     error = NULL;
-    if (!dbus_g_proxy_call (proxy, "show", &error, G_TYPE_INVALID, G_TYPE_INVALID))
+    if (!dbus_g_proxy_call (proxy, "show", &error, G_TYPE_STRV, environ,
+        G_TYPE_INVALID, G_TYPE_INVALID))
     {
         g_printerr ("Error: %s\n", error->message);
         g_error_free (error);

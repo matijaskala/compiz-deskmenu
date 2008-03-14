@@ -4,6 +4,7 @@
   <interface name="org.compiz_fusion.deskmenu">
     <annotation name="org.freedesktop.DBus.GLib.CSymbol" value="deskmenu"/>
     <method name="show">
+      <arg type="as" name="env" direction="in" />
     </method>
     <method name="reload">
     </method>

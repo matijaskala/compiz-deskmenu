@@ -69,6 +69,7 @@ struct Deskmenu
     GHashTable *item_hash;
     GHashTable *element_hash;
     GHookList *show_hooks;
+    gchar **envp;
 };
 
 struct DeskmenuClass
@@ -93,7 +94,7 @@ GQuark deskmenu_error_quark (void);
 #define DESKMENU_ERROR deskmenu_error_quark ()
 
 
-gboolean deskmenu_show (Deskmenu *deskmenu, GError **error);
+gboolean deskmenu_show (Deskmenu *deskmenu, gchar **env, GError **error);
 gboolean deskmenu_reload (Deskmenu *deskmenu, GError **error);
 
 
