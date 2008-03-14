@@ -721,6 +721,8 @@ if __name__ == '__main__':
             bus = dbus.SessionBus()
         except dbus.DBusException:
             bus = None
+    else:
+        bus = None
 
     filename = BaseDirectory.load_first_config('compiz/deskmenu/menu.xml')
     menufile = etree.parse(filename)
